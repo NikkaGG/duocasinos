@@ -14,6 +14,7 @@ class CrashChart {
     this.isCrashed = false;
     this.crashAnimation = null;
     this.pulseAnimation = 0;
+    this.noiseOffset = 0;
     
     this.padding = { top: 20, right: 20, bottom: 30, left: 50 };
     this.maxVisibleTime = 20000;
@@ -57,6 +58,7 @@ class CrashChart {
     this.startTime = Date.now();
     this.isCrashed = false;
     this.crashAnimation = null;
+    this.noiseOffset = Math.random() * 1000;
     
     this.points.push({
       time: 0,
@@ -132,6 +134,14 @@ class CrashChart {
     } else {
       return Math.ceil(this.currentMultiplier * 1.2);
     }
+  }
+  
+  getNoise(time) {
+    const t = time / 1000 + this.noiseOffset;
+    const wave1 = Math.sin(t * 2.1) * 0.5;
+    const wave2 = Math.sin(t * 3.7) * 0.3;
+    const wave3 = Math.sin(t * 5.3) * 0.2;
+    return (wave1 + wave2 + wave3);
   }
   
   getYPosition(multiplier) {
@@ -218,7 +228,11 @@ class CrashChart {
     visiblePoints.forEach((point, index) => {
       const timeSincePoint = elapsed - point.time;
       const x = this.padding.left + chartWidth * (1 - timeSincePoint / this.maxVisibleTime);
-      const y = this.getYPosition(point.multiplier);
+      let y = this.getYPosition(point.multiplier);
+      
+      const noise = this.getNoise(point.time);
+      const noiseAmplitude = 3 + (point.multiplier - 1) * 0.5;
+      y += noise * noiseAmplitude;
       
       if (index === 0) {
         this.ctx.moveTo(x, y);
@@ -244,6 +258,11 @@ class CrashChart {
     
     const lastPoint = visiblePoints[visiblePoints.length - 1];
     const lastX = this.padding.left + chartWidth * (1 - (elapsed - lastPoint.time) / this.maxVisibleTime);
+    let lastY = this.getYPosition(lastPoint.multiplier);
+    
+    const lastNoise = this.getNoise(lastPoint.time);
+    const lastNoiseAmplitude = 3 + (lastPoint.multiplier - 1) * 0.5;
+    lastY += lastNoise * lastNoiseAmplitude;
     
     this.ctx.lineTo(lastX, this.height - this.padding.bottom);
     this.ctx.lineTo(this.padding.left, this.height - this.padding.bottom);
@@ -251,8 +270,6 @@ class CrashChart {
     
     this.ctx.fillStyle = fillGradient;
     this.ctx.fill();
-    
-    const lastY = this.getYPosition(lastPoint.multiplier);
     
     const pulse = Math.sin(this.pulseAnimation) * 0.3 + 1;
     const baseRadius = 6;
