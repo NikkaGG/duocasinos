@@ -777,7 +777,7 @@ io.on('connection', (socket) => {
     gameState.status = 'flying';
     gameState.startTime = new Date();
     gameState.multiplier = 1.00;
-    gameState.crashPoint = (Math.random() * 9 + 1).toFixed(2);
+    gameState.crashPoint = parseFloat((Math.random() * 9 + 1).toFixed(2));
     
     io.to('global_crash').emit('crash_started', {
       startTime: gameState.startTime.toISOString()
@@ -789,23 +789,34 @@ io.on('connection', (socket) => {
     
     console.log(`🚀 Crash начался! Краш на: ${gameState.crashPoint}x`);
     
-    // Увеличиваем множитель каждые 100мс (ускоряется с ростом)
+    // Увеличиваем множитель каждые 100мс с плавным ускорением
     gameState.gameInterval = setInterval(() => {
-      // Ускоряем рост по мере увеличения
+      // Плавное ускорение роста
       let increment = 0.01;
       if (gameState.multiplier > 2) increment = 0.02;
       if (gameState.multiplier > 5) increment = 0.05;
       if (gameState.multiplier > 10) increment = 0.1;
       
-      gameState.multiplier += increment;
+      // Проверяем ПЕРЕД увеличением, чтобы не перепрыгнуть через crashPoint
+      const nextMultiplier = gameState.multiplier + increment;
       
-      io.to('global_crash').emit('crash_multiplier', {
-        multiplier: parseFloat(gameState.multiplier.toFixed(2))
-      });
-      
-      // Проверяем краш
-      if (gameState.multiplier >= parseFloat(gameState.crashPoint)) {
+      if (nextMultiplier >= gameState.crashPoint) {
+        // Если следующее значение превысит crashPoint, устанавливаем точное значение
+        gameState.multiplier = gameState.crashPoint;
+        
+        io.to('global_crash').emit('crash_multiplier', {
+          multiplier: gameState.crashPoint
+        });
+        
+        // Краш происходит сразу
         crashCrashGame();
+      } else {
+        // Иначе плавно увеличиваем
+        gameState.multiplier = parseFloat(nextMultiplier.toFixed(2));
+        
+        io.to('global_crash').emit('crash_multiplier', {
+          multiplier: gameState.multiplier
+        });
       }
     }, 100);
   }
