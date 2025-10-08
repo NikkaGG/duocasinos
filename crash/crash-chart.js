@@ -106,22 +106,28 @@ class CrashChart {
     this.animationFrame = requestAnimationFrame(() => this.animate());
   }
   
+  getMaxMultiplier() {
+    if (this.currentMultiplier <= 2) {
+      return 2.5;
+    } else if (this.currentMultiplier <= 5) {
+      return 6;
+    } else if (this.currentMultiplier <= 10) {
+      return 12;
+    } else {
+      return Math.ceil(this.currentMultiplier * 1.2);
+    }
+  }
+  
   getYPosition(multiplier) {
     const chartHeight = this.height - this.padding.top - this.padding.bottom;
     const minMultiplier = 1.0;
+    const maxMultiplier = this.getMaxMultiplier();
     
-    let maxMultiplier;
-    if (this.currentMultiplier <= 2) {
-      maxMultiplier = 2.5;
-    } else if (this.currentMultiplier <= 5) {
-      maxMultiplier = 6;
-    } else if (this.currentMultiplier <= 10) {
-      maxMultiplier = 12;
-    } else {
-      maxMultiplier = Math.ceil(this.currentMultiplier * 1.2);
-    }
+    const logMin = Math.log(minMultiplier);
+    const logMax = Math.log(maxMultiplier);
+    const logValue = Math.log(Math.max(multiplier, minMultiplier));
     
-    const ratio = (multiplier - minMultiplier) / (maxMultiplier - minMultiplier);
+    const ratio = (logValue - logMin) / (logMax - logMin);
     const y = this.height - this.padding.bottom - (ratio * chartHeight);
     
     return Math.max(this.padding.top, Math.min(this.height - this.padding.bottom, y));
@@ -146,28 +152,23 @@ class CrashChart {
     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
     this.ctx.lineWidth = 1;
     
+    const minMultiplier = 1.0;
+    const maxMultiplier = this.getMaxMultiplier();
+    
+    const logMin = Math.log(minMultiplier);
+    const logMax = Math.log(maxMultiplier);
+    
     const horizontalLines = 5;
     for (let i = 0; i <= horizontalLines; i++) {
-      const y = this.padding.top + (this.height - this.padding.top - this.padding.bottom) * (i / horizontalLines);
+      const logValue = logMax - (logMax - logMin) * (i / horizontalLines);
+      const multiplierValue = Math.exp(logValue);
+      
+      const y = this.getYPosition(multiplierValue);
       
       this.ctx.beginPath();
       this.ctx.moveTo(this.padding.left, y);
       this.ctx.lineTo(this.width - this.padding.right, y);
       this.ctx.stroke();
-      
-      const minMultiplier = 1.0;
-      let maxMultiplier;
-      if (this.currentMultiplier <= 2) {
-        maxMultiplier = 2.5;
-      } else if (this.currentMultiplier <= 5) {
-        maxMultiplier = 6;
-      } else if (this.currentMultiplier <= 10) {
-        maxMultiplier = 12;
-      } else {
-        maxMultiplier = Math.ceil(this.currentMultiplier * 1.2);
-      }
-      
-      const multiplierValue = minMultiplier + (maxMultiplier - minMultiplier) * (1 - i / horizontalLines);
       
       this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
       this.ctx.font = '10px Montserrat';
