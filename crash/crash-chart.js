@@ -96,10 +96,22 @@ class CrashChart {
   crash(crashPoint) {
     this.isCrashed = true;
     this.currentMultiplier = crashPoint;
+    
+    // Получаем последнюю точку с учетом шума для точной синхронизации
+    const lastPoint = this.points[this.points.length - 1];
+    let crashY = this.getYPosition(crashPoint);
+    
+    // Добавляем шум, как в визуальной линии
+    if (lastPoint) {
+      const noise = this.getNoise(lastPoint.time);
+      const noiseAmplitude = 3 + (crashPoint - 1) * 0.5;
+      crashY += noise * noiseAmplitude;
+    }
+    
     this.crashAnimation = {
       startTime: Date.now(),
       duration: 1000,
-      startY: this.getYPosition(crashPoint)
+      startY: crashY
     };
     
     if (this.multiplierElement) {
