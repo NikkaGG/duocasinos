@@ -156,11 +156,7 @@ class CrashChart {
     const elapsed = Date.now() - this.startTime;
     const chartWidth = this.width - this.padding.left - this.padding.right;
     
-    const visiblePoints = this.points.filter(p => 
-      elapsed - p.time < this.maxVisibleTime
-    );
-    
-    if (visiblePoints.length < 2) return;
+    if (this.points.length < 2) return;
     
     const gradient = this.ctx.createLinearGradient(
       this.padding.left, 
@@ -174,16 +170,17 @@ class CrashChart {
     
     this.ctx.beginPath();
     
-    visiblePoints.forEach((point, index) => {
-      const timeSincePoint = elapsed - point.time;
-      const x = this.padding.left + chartWidth * (1 - timeSincePoint / this.maxVisibleTime);
+    this.points.forEach((point, index) => {
+      const progress = Math.min(point.time / this.maxVisibleTime, 1);
+      const x = this.padding.left + chartWidth * progress;
       const y = this.getYPosition(point.multiplier);
       
       if (index === 0) {
         this.ctx.moveTo(x, y);
       } else {
-        const prevPoint = visiblePoints[index - 1];
-        const prevX = this.padding.left + chartWidth * (1 - (elapsed - prevPoint.time) / this.maxVisibleTime);
+        const prevPoint = this.points[index - 1];
+        const prevProgress = Math.min(prevPoint.time / this.maxVisibleTime, 1);
+        const prevX = this.padding.left + chartWidth * prevProgress;
         const prevY = this.getYPosition(prevPoint.multiplier);
         
         const cpX = (prevX + x) / 2;
@@ -208,8 +205,9 @@ class CrashChart {
     fillGradient.addColorStop(0, 'rgba(84, 164, 80, 0.3)');
     fillGradient.addColorStop(1, 'rgba(84, 164, 80, 0.05)');
     
-    const lastPoint = visiblePoints[visiblePoints.length - 1];
-    const lastX = this.padding.left + chartWidth * (1 - (elapsed - lastPoint.time) / this.maxVisibleTime);
+    const lastPoint = this.points[this.points.length - 1];
+    const lastProgress = Math.min(lastPoint.time / this.maxVisibleTime, 1);
+    const lastX = this.padding.left + chartWidth * lastProgress;
     
     this.ctx.lineTo(lastX, this.height - this.padding.bottom);
     this.ctx.lineTo(this.padding.left, this.height - this.padding.bottom);
@@ -251,8 +249,8 @@ class CrashChart {
     
     const chartWidth = this.width - this.padding.left - this.padding.right;
     const lastPoint = this.points[this.points.length - 1];
-    const elapsedTotal = Date.now() - this.startTime;
-    const lastX = this.padding.left + chartWidth * (1 - (elapsedTotal - lastPoint.time) / this.maxVisibleTime);
+    const lastProgress = Math.min(lastPoint.time / this.maxVisibleTime, 1);
+    const lastX = this.padding.left + chartWidth * lastProgress;
     const lastY = this.crashAnimation.startY;
     
     const flyDistance = this.height * 0.5;
