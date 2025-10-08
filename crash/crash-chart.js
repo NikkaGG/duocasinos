@@ -206,14 +206,7 @@ class CrashChart {
       if (index === 0) {
         this.ctx.moveTo(x, y);
       } else {
-        const prevPoint = visiblePoints[index - 1];
-        const prevX = this.padding.left + chartWidth * (1 - (elapsed - prevPoint.time) / this.maxVisibleTime);
-        const prevY = this.getYPosition(prevPoint.multiplier);
-        
-        const cpX = (prevX + x) / 2;
-        const cpY = (prevY + y) / 2;
-        
-        this.ctx.quadraticCurveTo(prevX, prevY, cpX, cpY);
+        this.ctx.lineTo(x, y);
       }
     });
     
