@@ -1,6 +1,7 @@
 class CrashChart {
-  constructor(container) {
+  constructor(container, multiplierElement) {
     this.container = container;
+    this.multiplierElement = multiplierElement;
     this.canvas = null;
     this.ctx = null;
     this.animationFrame = null;
@@ -62,6 +63,11 @@ class CrashChart {
       multiplier: 1.0
     });
     
+    if (this.multiplierElement) {
+      this.multiplierElement.textContent = '1.00x';
+      this.multiplierElement.classList.remove('crashed');
+    }
+    
     this.animate();
   }
   
@@ -79,15 +85,25 @@ class CrashChart {
     if (this.points.length > 1000) {
       this.points.shift();
     }
+    
+    if (this.multiplierElement) {
+      this.multiplierElement.textContent = `${multiplier.toFixed(2)}x`;
+    }
   }
   
-  crash() {
+  crash(crashPoint) {
     this.isCrashed = true;
+    this.currentMultiplier = crashPoint;
     this.crashAnimation = {
       startTime: Date.now(),
       duration: 1000,
-      startY: this.getYPosition(this.currentMultiplier)
+      startY: this.getYPosition(crashPoint)
     };
+    
+    if (this.multiplierElement) {
+      this.multiplierElement.textContent = `${crashPoint.toFixed(2)}x`;
+      this.multiplierElement.classList.add('crashed');
+    }
   }
   
   stop() {

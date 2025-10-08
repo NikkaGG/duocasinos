@@ -86,9 +86,9 @@
   // Флаг что данные получены
   let dataReceived = false;
   
-  // Инициализируем график
-  if (gameContainer && window.CrashChart) {
-    crashChart = new window.CrashChart(gameContainer);
+  // Инициализируем график с передачей элемента множителя
+  if (gameContainer && window.CrashChart && elements.currentMultiplier) {
+    crashChart = new window.CrashChart(gameContainer, elements.currentMultiplier);
     crashChart.stop();
   }
   
@@ -238,17 +238,13 @@
       if (elements.multiplierLayer) {
         elements.multiplierLayer.style.display = 'flex';
       }
-      if (elements.currentMultiplier) {
-        elements.currentMultiplier.classList.remove('crashed');
-        elements.currentMultiplier.textContent = '1.00x';
-      }
       
       // Скрываем "Round ended"
       if (elements.gameEnded) {
         elements.gameEnded.style.display = 'none';
       }
       
-      // Показываем и запускаем график
+      // Показываем и запускаем график (график сам обновит текст множителя)
       if (crashChart) {
         if (crashChart.canvas) {
           crashChart.canvas.style.opacity = '1';
@@ -275,14 +271,9 @@
       
       currentMultiplier = data.multiplier;
       
-      // Обновляем график
+      // Обновляем график (график сам обновит текст множителя)
       if (crashChart) {
         crashChart.updateMultiplier(data.multiplier);
-      }
-      
-      // Обновляем текст
-      if (elements.currentMultiplier) {
-        elements.currentMultiplier.textContent = `${data.multiplier.toFixed(2)}x`;
       }
       
       // Обновляем live выигрыш в Auto Cash Out
@@ -316,16 +307,11 @@
     ws.socket.on('crash_ended', (data) => {
       console.log('💥 Краш на:', data.crashPoint);
       gameState = GAME_STATES.CRASHED;
-      currentMultiplier = 1.00;
+      currentMultiplier = data.crashPoint;
       
-      // Анимация краша на графике
+      // Анимация краша на графике (график сам обновит текст множителя)
       if (crashChart) {
-        crashChart.crash();
-      }
-      
-      if (elements.currentMultiplier) {
-        elements.currentMultiplier.textContent = `${data.crashPoint.toFixed(2)}x`;
-        elements.currentMultiplier.classList.add('crashed');
+        crashChart.crash(data.crashPoint);
       }
       
       // Показываем "Round ended"
