@@ -57,6 +57,11 @@ class CrashChart {
     this.isCrashed = false;
     this.crashAnimation = null;
     
+    this.points.push({
+      time: 0,
+      multiplier: 1.0
+    });
+    
     this.animate();
   }
   

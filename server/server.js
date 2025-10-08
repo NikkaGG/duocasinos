@@ -783,6 +783,10 @@ io.on('connection', (socket) => {
       startTime: gameState.startTime.toISOString()
     });
     
+    io.to('global_crash').emit('crash_multiplier', {
+      multiplier: 1.00
+    });
+    
     console.log(`🚀 Crash начался! Краш на: ${gameState.crashPoint}x`);
     
     // Увеличиваем множитель каждые 100мс (ускоряется с ростом)

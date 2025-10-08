@@ -173,6 +173,7 @@
     ws.socket.on('crash_waiting', (data) => {
       console.log('⏳ Ожидание:', data.timeLeft);
       gameState = GAME_STATES.WAITING;
+      currentMultiplier = 1.00;
       
       // Убираем загрузку ТОЛЬКО КОГДА ПОЛУЧЕНЫ ДАННЫЕ
       if (!dataReceived && elements.loadingOverlay) {
@@ -267,8 +268,8 @@
 
     // Обновление множителя
     ws.socket.on('crash_multiplier', (data) => {
-      if (data.multiplier < currentMultiplier) {
-        console.warn('⚠️ Множитель пытается уменьшиться:', currentMultiplier, '->', data.multiplier);
+      if (gameState !== GAME_STATES.FLYING) {
+        console.warn('⚠️ Получен множитель вне игры');
         return;
       }
       
@@ -315,6 +316,7 @@
     ws.socket.on('crash_ended', (data) => {
       console.log('💥 Краш на:', data.crashPoint);
       gameState = GAME_STATES.CRASHED;
+      currentMultiplier = 1.00;
       
       // Анимация краша на графике
       if (crashChart) {
