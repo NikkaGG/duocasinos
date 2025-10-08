@@ -33,8 +33,6 @@
     multiplierLayer: document.getElementById('multiplierLayer'),
     currentMultiplier: document.getElementById('currentMultiplier'),
     gameEnded: document.querySelector('.game-ended'),
-    graphCanvas: null, // Canvas для графика
-    graphCtx: null,
     
     // Ставка
     betInput: document.querySelector('#betInput'),
@@ -85,37 +83,7 @@
   // Флаг что данные получены
   let dataReceived = false;
   
-  // Создаем Canvas для графика
-  if (gameContainer) {
-    const canvas = document.createElement('canvas');
-    canvas.id = 'crashGraph';
-    canvas.width = 400;
-    canvas.height = 256;
-    canvas.style.position = 'absolute';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.pointerEvents = 'none';
-    canvas.style.display = 'none';
-    gameContainer.appendChild(canvas);
-    elements.graphCanvas = canvas;
-    elements.graphCtx = canvas.getContext('2d');
-  }
-  
-  // Данные графика
-  let graphPoints = [];
-  let graphTime = 0;
-  let graphCrashed = false;
-  
-  // Plane image for trail
-  const planeImage = new Image();
-  planeImage.src = 'https://raw.githubusercontent.com/Pacific1a/img/main/crash/Union.png';
-  let planeLoaded = false;
-  planeImage.onload = () => {
-    planeLoaded = true;
-    console.log('✈️ Plane image loaded');
-  };
+
   
   // Скрываем все блоки при загрузке
   if (elements.multiplierLayer) {
@@ -199,18 +167,6 @@
       console.log('⏳ Ожидание:', data.timeLeft);
       gameState = GAME_STATES.WAITING;
       
-      // ОЧИЩАЕМ ГРАФИК при ожидании
-      graphPoints = [];
-      graphCrashed = true; // Останавливаем анимацию
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-      if (elements.graphCtx && elements.graphCanvas) {
-        elements.graphCtx.clearRect(0, 0, elements.graphCanvas.width, elements.graphCanvas.height);
-        elements.graphCanvas.style.display = 'none';
-      }
-      
       // Убираем загрузку ТОЛЬКО КОГДА ПОЛУЧЕНЫ ДАННЫЕ
       if (!dataReceived && elements.loadingOverlay) {
         dataReceived = true;
@@ -246,26 +202,6 @@
     ws.socket.on('crash_started', (data) => {
       console.log('🚀 Crash начался!');
       gameState = GAME_STATES.FLYING;
-      
-      // ОЧИЩАЕМ ГРАФИК
-      graphPoints = [];
-      graphTime = 0;
-      graphCrashed = false;
-      graphStartTime = Date.now();
-      
-      // ОЧИЩАЕМ CANVAS
-      if (elements.graphCtx && elements.graphCanvas) {
-        elements.graphCtx.clearRect(0, 0, elements.graphCanvas.width, elements.graphCanvas.height);
-      }
-      
-      // Запускаем анимацию
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      animateGraph();
-      
-      // Показываем canvas
-      if (elements.graphCanvas) {
-        elements.graphCanvas.style.display = 'block';
-      }
       
       // Убираем загрузку ТОЛЬКО КОГДА ПОЛУЧЕНЫ ДАННЫЕ
       if (!dataReceived && elements.loadingOverlay) {
@@ -334,8 +270,6 @@
         }
       }
       
-      // График рисуется автоматически через requestAnimationFrame (60 FPS)
-      
       // Обновляем live выигрыш в Auto Cash Out
       if (autoCashOutEnabled && playerHasBet && !playerCashedOut && elements.betButtonChips) {
         const potentialWin = Math.floor(playerBetAmount * currentMultiplier);
@@ -367,28 +301,6 @@
     ws.socket.on('crash_ended', (data) => {
       console.log('💥 Краш на:', data.crashPoint);
       gameState = GAME_STATES.CRASHED;
-      
-      // Краш графика
-      graphCrashed = true;
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      
-      // ОЧИЩАЕМ СРАЗУ ПОСЛЕ КРАША
-      graphPoints = [];
-      if (elements.graphCtx && elements.graphCanvas) {
-        elements.graphCtx.clearRect(0, 0, elements.graphCanvas.width, elements.graphCanvas.height);
-      }
-      
-      // Показываем "Round ended"
-      if (elements.gameEnded) {
-        elements.gameEnded.style.display = 'block';
-      }
-      
-      // Скрываем canvas через 3 секунды
-      setTimeout(() => {
-        if (elements.graphCanvas) {
-          elements.graphCanvas.style.display = 'none';
-        }
-      }, 3000);
       
       if (elements.currentMultiplier) {
         elements.currentMultiplier.textContent = `${data.crashPoint.toFixed(2)}x`;
@@ -686,113 +598,7 @@
     });
   }
 
-  // ============ БЫСТРАЯ АНИМАЦИЯ ГРАФИКА ============
-  function drawGraph() {
-    if (!elements.graphCtx || !elements.graphCanvas) return;
-    
-    const ctx = elements.graphCtx;
-    const width = elements.graphCanvas.width;
-    const height = elements.graphCanvas.height;
-    
-    // ПОЛНАЯ ОЧИСТКА
-    ctx.clearRect(0, 0, width, height);
-    
-    // СЕТКА
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < width; x += 50) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, height);
-      ctx.stroke();
-    }
-    for (let y = 0; y < height; y += 50) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-    
-    if (graphPoints.length < 2) return;
-    
-    // ПУЛЬСАЦИЯ (вверх-вниз)
-    const pulse = Math.sin(Date.now() / 200) * 10; // Плавает ±10px
-    
-    // Цвет #FF1D50
-    const lineColor = '#FF1D50';
-    
-    // РИСУЕМ КРИВУЮ С ПУЛЬСАЦИЕЙ
-    ctx.beginPath();
-    ctx.moveTo(graphPoints[0].x, graphPoints[0].y + pulse);
-    
-    for (let i = 1; i < graphPoints.length; i++) {
-      ctx.lineTo(graphPoints[i].x, graphPoints[i].y + pulse);
-    }
-    
-    ctx.strokeStyle = lineColor;
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    
-    // ТОЧКА НА КОНЦЕ
-    if (!graphCrashed) {
-      const lastPoint = graphPoints[graphPoints.length - 1];
-      ctx.beginPath();
-      ctx.arc(lastPoint.x, lastPoint.y + pulse, 8, 0, Math.PI * 2);
-      ctx.fillStyle = lineColor;
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-  }
-  
-  // Сохраняем время старта графика
-  let graphStartTime = 0;
-  let animationFrameId = null;
-  let frameCounter = 0; // Счетчик кадров
-  
-  // Цикл рисования (БЫСТРАЯ АНИМАЦИЯ + ПУЛЬСАЦИЯ)
-  function animateGraph() {
-    if (gameState === GAME_STATES.FLYING && !graphCrashed) {
-      frameCounter++;
-      
-      // Добавляем точку каждые 3 кадра (20 точек/сек)
-      if (frameCounter % 3 === 0) {
-        updateGraph();
-      }
-      
-      drawGraph();   // Рисуем каждый кадр (пульсация работает!)
-      animationFrameId = requestAnimationFrame(animateGraph);
-    }
-  }
-  
-  function updateGraph() {
-    if (gameState !== GAME_STATES.FLYING || graphCrashed) return;
-    
-    const width = elements.graphCanvas.width;
-    const height = elements.graphCanvas.height;
-    
-    // БЫСТРОЕ СОЗДАНИЕ КРИВОЙ
-    const multiplierProgress = Math.min((currentMultiplier - 1.0) / 10.0, 1); // 1x -> 11x
-    
-    // X: НАЧИНАЕТСЯ НА 40px ЛЕВЕЕ + быстрый рост
-    const xStart = -20; // Начало левее на 40px
-    const xCurve = Math.pow(multiplierProgress, 0.6); // Быстрый старт
-    const x = xStart + (width - xStart - 20) * xCurve;
-    
-    // Y: Экспоненциальная кривая
-    const yCurve = Math.pow(multiplierProgress, 2.3);
-    const y = height - 20 - (height - 40) * yCurve;
-    
-    graphPoints.push({ x, y });
-    
-    // Ограничиваем количество точек
-    if (graphPoints.length > 200) {
-      graphPoints.shift();
-    }
-  }
+
 
   // ============ ЗАПУСК ============
   waitForWebSocket();
