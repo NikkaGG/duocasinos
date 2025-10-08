@@ -15,7 +15,7 @@ class CrashChart {
     this.pulseAnimation = 0;
     
     this.padding = { top: 20, right: 20, bottom: 30, left: 50 };
-    this.maxVisibleTime = 15000;
+    this.maxVisibleTime = 20000;
     
     this.init();
   }
