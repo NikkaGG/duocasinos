@@ -176,14 +176,14 @@ class CrashChart {
     
     visiblePoints.forEach((point, index) => {
       const timeSincePoint = elapsed - point.time;
-      const x = this.padding.left + chartWidth * (1 - timeSincePoint / this.maxVisibleTime);
+      const x = this.padding.left + chartWidth * (timeSincePoint / this.maxVisibleTime);
       const y = this.getYPosition(point.multiplier);
       
       if (index === 0) {
         this.ctx.moveTo(x, y);
       } else {
         const prevPoint = visiblePoints[index - 1];
-        const prevX = this.padding.left + chartWidth * (1 - (elapsed - prevPoint.time) / this.maxVisibleTime);
+        const prevX = this.padding.left + chartWidth * ((elapsed - prevPoint.time) / this.maxVisibleTime);
         const prevY = this.getYPosition(prevPoint.multiplier);
         
         const cpX = (prevX + x) / 2;
@@ -209,10 +209,12 @@ class CrashChart {
     fillGradient.addColorStop(1, 'rgba(84, 164, 80, 0.05)');
     
     const lastPoint = visiblePoints[visiblePoints.length - 1];
-    const lastX = this.padding.left + chartWidth * (1 - (elapsed - lastPoint.time) / this.maxVisibleTime);
+    const lastX = this.padding.left + chartWidth * ((elapsed - lastPoint.time) / this.maxVisibleTime);
+    const firstPoint = visiblePoints[0];
+    const firstX = this.padding.left + chartWidth * ((elapsed - firstPoint.time) / this.maxVisibleTime);
     
     this.ctx.lineTo(lastX, this.height - this.padding.bottom);
-    this.ctx.lineTo(this.padding.left, this.height - this.padding.bottom);
+    this.ctx.lineTo(firstX, this.height - this.padding.bottom);
     this.ctx.closePath();
     
     this.ctx.fillStyle = fillGradient;
@@ -252,7 +254,7 @@ class CrashChart {
     const chartWidth = this.width - this.padding.left - this.padding.right;
     const lastPoint = this.points[this.points.length - 1];
     const elapsedTotal = Date.now() - this.startTime;
-    const lastX = this.padding.left + chartWidth * (1 - (elapsedTotal - lastPoint.time) / this.maxVisibleTime);
+    const lastX = this.padding.left + chartWidth * ((elapsedTotal - lastPoint.time) / this.maxVisibleTime);
     const lastY = this.crashAnimation.startY;
     
     const flyDistance = this.height * 0.5;
