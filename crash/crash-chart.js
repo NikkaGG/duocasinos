@@ -103,12 +103,10 @@ class CrashChart {
   
   getYPosition(multiplier) {
     const chartHeight = this.height - this.padding.top - this.padding.bottom;
+    const minMultiplier = 1.0;
     const maxMultiplier = Math.max(10, this.currentMultiplier * 1.2);
     
-    const logMultiplier = Math.log10(multiplier);
-    const logMax = Math.log10(maxMultiplier);
-    
-    const ratio = logMultiplier / logMax;
+    const ratio = (multiplier - minMultiplier) / (maxMultiplier - minMultiplier);
     const y = this.height - this.padding.bottom - (ratio * chartHeight);
     
     return Math.max(this.padding.top, Math.min(this.height - this.padding.bottom, y));
@@ -142,8 +140,9 @@ class CrashChart {
       this.ctx.lineTo(this.width - this.padding.right, y);
       this.ctx.stroke();
       
+      const minMultiplier = 1.0;
       const maxMultiplier = Math.max(10, this.currentMultiplier * 1.2);
-      const multiplierValue = Math.pow(10, Math.log10(maxMultiplier) * (1 - i / horizontalLines));
+      const multiplierValue = minMultiplier + (maxMultiplier - minMultiplier) * (1 - i / horizontalLines);
       
       this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
       this.ctx.font = '10px Montserrat';
