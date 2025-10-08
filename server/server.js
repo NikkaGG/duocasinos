@@ -789,30 +789,35 @@ io.on('connection', (socket) => {
     
     console.log(`🚀 Crash начался! Краш на: ${gameState.crashPoint}x`);
     
-    // Увеличиваем множитель каждые 100мс с плавным ускорением
+    // Целевое время игры в секундах (плавный рост до crashPoint)
+    const targetDuration = 8 + (gameState.crashPoint - 1) * 0.5; // 8 сек для 1х + 0.5 сек на каждый 1х
+    const totalSteps = targetDuration * 10; // 10 шагов в секунду (интервал 100мс)
+    let currentStep = 0;
+    
+    // Увеличиваем множитель каждые 100мс с плавным ростом
     gameState.gameInterval = setInterval(() => {
-      // Плавное ускорение роста
-      let increment = 0.01;
-      if (gameState.multiplier > 2) increment = 0.02;
-      if (gameState.multiplier > 5) increment = 0.05;
-      if (gameState.multiplier > 10) increment = 0.1;
+      currentStep++;
       
-      // Проверяем ПЕРЕД увеличением, чтобы не перепрыгнуть через crashPoint
-      const nextMultiplier = gameState.multiplier + increment;
+      // Прогресс от 0 до 1
+      const progress = currentStep / totalSteps;
       
-      if (nextMultiplier >= gameState.crashPoint) {
-        // Если следующее значение превысит crashPoint, устанавливаем точное значение
+      // Плавная экспоненциальная функция роста
+      // Используем формулу: multiplier = 1 + (crashPoint - 1) * progress^0.8
+      const newMultiplier = 1 + (gameState.crashPoint - 1) * Math.pow(progress, 0.8);
+      
+      // Проверяем, достигли ли crashPoint
+      if (newMultiplier >= gameState.crashPoint || currentStep >= totalSteps) {
         gameState.multiplier = gameState.crashPoint;
         
         io.to('global_crash').emit('crash_multiplier', {
           multiplier: gameState.crashPoint
         });
         
-        // Краш происходит сразу
+        // Краш происходит
         crashCrashGame();
       } else {
-        // Иначе плавно увеличиваем
-        gameState.multiplier = parseFloat(nextMultiplier.toFixed(2));
+        // Плавно увеличиваем
+        gameState.multiplier = parseFloat(newMultiplier.toFixed(2));
         
         io.to('global_crash').emit('crash_multiplier', {
           multiplier: gameState.multiplier
