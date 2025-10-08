@@ -24,6 +24,8 @@
   let ws = null;
   let autoCashOutEnabled = false;
   let autoCashOutMultiplier = 2.0;
+  let crashChart = null;
+  let crashHistory = [];
 
   // ============ ЭЛЕМЕНТЫ ============
   const elements = {
@@ -33,6 +35,7 @@
     multiplierLayer: document.getElementById('multiplierLayer'),
     currentMultiplier: document.getElementById('currentMultiplier'),
     gameEnded: document.querySelector('.game-ended'),
+    crashHistory: document.getElementById('crashHistory'),
     
     // Ставка
     betInput: document.querySelector('#betInput'),
@@ -83,7 +86,11 @@
   // Флаг что данные получены
   let dataReceived = false;
   
-
+  // Инициализируем график
+  if (gameContainer && window.CrashChart) {
+    crashChart = new window.CrashChart(gameContainer);
+    crashChart.stop();
+  }
   
   // Скрываем все блоки при загрузке
   if (elements.multiplierLayer) {
@@ -187,6 +194,13 @@
         elements.multiplierLayer.style.display = 'none';
       }
       
+      // Скрываем график
+      if (crashChart && crashChart.canvas) {
+        crashChart.canvas.style.opacity = '0';
+        crashChart.canvas.style.visibility = 'hidden';
+        crashChart.stop();
+      }
+      
       // Обновляем таймер всегда
       if (elements.waitingTimer) {
         elements.waitingTimer.textContent = data.timeLeft;
@@ -231,6 +245,15 @@
         elements.gameEnded.style.display = 'none';
       }
       
+      // Показываем и запускаем график
+      if (crashChart) {
+        if (crashChart.canvas) {
+          crashChart.canvas.style.opacity = '1';
+          crashChart.canvas.style.visibility = 'visible';
+        }
+        crashChart.start();
+      }
+      
       // Если есть ставка и не забрали - показываем CASHOUT
       if (playerHasBet && !playerCashedOut) {
         setButtonState(BUTTON_STATES.CASHOUT);
@@ -245,6 +268,11 @@
     let lastMultiplierValue = '1.00x';
     ws.socket.on('crash_multiplier', (data) => {
       currentMultiplier = data.multiplier;
+      
+      // Обновляем график
+      if (crashChart) {
+        crashChart.updateMultiplier(data.multiplier);
+      }
       
       // ПЛАВНЫЙ НАБОР ЦИФР (по 0.01 в начале, по 0.02 выше)
       const now = Date.now();
@@ -302,6 +330,11 @@
       console.log('💥 Краш на:', data.crashPoint);
       gameState = GAME_STATES.CRASHED;
       
+      // Анимация краша на графике
+      if (crashChart) {
+        crashChart.crash();
+      }
+      
       if (elements.currentMultiplier) {
         elements.currentMultiplier.textContent = `${data.crashPoint.toFixed(2)}x`;
         elements.currentMultiplier.classList.add('crashed');
@@ -311,6 +344,9 @@
       if (elements.gameEnded) {
         elements.gameEnded.style.display = 'block';
       }
+      
+      // Добавляем в историю
+      addToCrashHistory(data.crashPoint);
       
       // Сбрасываем только если НЕ забрали
       if (playerHasBet && !playerCashedOut) {
@@ -486,6 +522,53 @@
         // Забираем выигрыш
         await performCashOut();
       }
+    });
+  }
+
+  // ============ ИСТОРИЯ КРАШЕЙ ============
+  function addToCrashHistory(crashPoint) {
+    crashHistory.unshift(crashPoint);
+    
+    if (crashHistory.length > 10) {
+      crashHistory = crashHistory.slice(0, 10);
+    }
+    
+    updateCrashHistoryUI();
+  }
+  
+  function updateCrashHistoryUI() {
+    if (!elements.crashHistory) return;
+    
+    elements.crashHistory.innerHTML = '';
+    
+    crashHistory.forEach(point => {
+      const historyItem = document.createElement('div');
+      historyItem.className = 'history-item';
+      
+      const color = point >= 2.0 ? '#54A450' : point >= 1.5 ? '#BAA657' : '#CA3959';
+      
+      historyItem.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: ${color}33;
+        border: 1px solid ${color}66;
+        min-width: 50px;
+      `;
+      
+      const textEl = document.createElement('span');
+      textEl.style.cssText = `
+        font-family: 'Montserrat', Helvetica;
+        font-weight: 600;
+        font-size: 12px;
+        color: ${color};
+      `;
+      textEl.textContent = `${point.toFixed(2)}x`;
+      
+      historyItem.appendChild(textEl);
+      elements.crashHistory.appendChild(historyItem);
     });
   }
 
