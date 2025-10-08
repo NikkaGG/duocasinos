@@ -216,6 +216,7 @@
     ws.socket.on('crash_started', (data) => {
       console.log('🚀 Crash начался!');
       gameState = GAME_STATES.FLYING;
+      currentMultiplier = 1.00;
       
       // Убираем загрузку ТОЛЬКО КОГДА ПОЛУЧЕНЫ ДАННЫЕ
       if (!dataReceived && elements.loadingOverlay) {
@@ -238,6 +239,7 @@
       }
       if (elements.currentMultiplier) {
         elements.currentMultiplier.classList.remove('crashed');
+        elements.currentMultiplier.textContent = '1.00x';
       }
       
       // Скрываем "Round ended"
@@ -263,10 +265,13 @@
       }
     });
 
-    // Обновление множителя (ОПТИМИЗИРОВАНО)
-    let lastMultiplierUpdate = 0;
-    let lastMultiplierValue = '1.00x';
+    // Обновление множителя
     ws.socket.on('crash_multiplier', (data) => {
+      if (data.multiplier < currentMultiplier) {
+        console.warn('⚠️ Множитель пытается уменьшиться:', currentMultiplier, '->', data.multiplier);
+        return;
+      }
+      
       currentMultiplier = data.multiplier;
       
       // Обновляем график
@@ -274,28 +279,9 @@
         crashChart.updateMultiplier(data.multiplier);
       }
       
-      // ПЛАВНЫЙ НАБОР ЦИФР (по 0.01 в начале, по 0.02 выше)
-      const now = Date.now();
-      
-      if (elements.currentMultiplier && (now - lastMultiplierUpdate > 100)) {
-        // Шаг обновления: 0.01 до 2x, 0.02 выше
-        const step = data.multiplier < 2.0 ? 0.01 : 0.02;
-        const currentDisplayed = parseFloat(lastMultiplierValue) || 1.0;
-        
-        // Плавно догоняем до реального значения
-        let newDisplayed = currentDisplayed;
-        if (Math.abs(data.multiplier - currentDisplayed) > step) {
-          newDisplayed = currentDisplayed + (data.multiplier > currentDisplayed ? step : -step);
-        } else {
-          newDisplayed = data.multiplier;
-        }
-        
-        const newValue = `${newDisplayed.toFixed(2)}x`;
-        if (newValue !== lastMultiplierValue) {
-          elements.currentMultiplier.textContent = newValue;
-          lastMultiplierValue = newValue;
-          lastMultiplierUpdate = now;
-        }
+      // Обновляем текст
+      if (elements.currentMultiplier) {
+        elements.currentMultiplier.textContent = `${data.multiplier.toFixed(2)}x`;
       }
       
       // Обновляем live выигрыш в Auto Cash Out

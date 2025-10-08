@@ -584,16 +584,9 @@ io.on('connection', (socket) => {
             timeLeft: gameState.waitingTime
           });
           console.log(`⚡ Crash: Таймер ${gameState.waitingTime}`);
-        } else if (gameState.status === 'flying' && gameState.gameInterval) {
-          // Отправляем текущий множитель СРАЗУ
-          socket.emit('crash_started', {
-            startTime: gameState.startTime.toISOString()
-          });
-          socket.emit('crash_multiplier', {
-            multiplier: parseFloat(gameState.multiplier.toFixed(2))
-          });
-          console.log(`⚡ Crash: Множитель ${gameState.multiplier.toFixed(2)}x`);
         }
+        // НЕ отправляем crash_started при подключении к уже идущей игре
+        // Игрок просто дождется следующего раунда
       }
     }
   });
