@@ -104,7 +104,7 @@ class CrashChart {
     // Добавляем шум, как в визуальной линии
     if (lastPoint) {
       const noise = this.getNoise(lastPoint.time);
-      const noiseAmplitude = 3 + (crashPoint - 1) * 0.5;
+      const noiseAmplitude = 0.3;
       crashY += noise * noiseAmplitude;
     }
     
@@ -243,7 +243,7 @@ class CrashChart {
       let y = this.getYPosition(point.multiplier);
       
       const noise = this.getNoise(point.time);
-      const noiseAmplitude = 3 + (point.multiplier - 1) * 0.5;
+      const noiseAmplitude = 0.3;
       y += noise * noiseAmplitude;
       
       if (index === 0) {
@@ -273,7 +273,7 @@ class CrashChart {
     let lastY = this.getYPosition(lastPoint.multiplier);
     
     const lastNoise = this.getNoise(lastPoint.time);
-    const lastNoiseAmplitude = 3 + (lastPoint.multiplier - 1) * 0.5;
+    const lastNoiseAmplitude = 0.3;
     lastY += lastNoise * lastNoiseAmplitude;
     
     this.ctx.lineTo(lastX, this.height - this.padding.bottom);

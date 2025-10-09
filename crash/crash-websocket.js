@@ -175,6 +175,12 @@
       gameState = GAME_STATES.WAITING;
       currentMultiplier = 1.00;
       
+      // Сбрасываем визуальный коэффициент в период ожидания
+      if (elements.currentMultiplier) {
+        elements.currentMultiplier.textContent = '1.00x';
+        elements.currentMultiplier.classList.remove('crashed');
+      }
+      
       // Убираем загрузку ТОЛЬКО КОГДА ПОЛУЧЕНЫ ДАННЫЕ
       if (!dataReceived && elements.loadingOverlay) {
         dataReceived = true;
@@ -237,6 +243,8 @@
       // Показываем HTML множитель
       if (elements.multiplierLayer) {
         elements.multiplierLayer.style.display = 'flex';
+        // Принудительная перерисовка элемента
+        void elements.multiplierLayer.offsetHeight;
       }
       
       // Скрываем "Round ended"
@@ -244,12 +252,22 @@
         elements.gameEnded.style.display = 'none';
       }
       
-      // Показываем и запускаем график (график сам обновит текст множителя)
+      // Показываем график
+      if (crashChart && crashChart.canvas) {
+        crashChart.canvas.style.opacity = '1';
+        crashChart.canvas.style.visibility = 'visible';
+      }
+      
+      // Принудительно устанавливаем 1.00x перед запуском графика
+      if (elements.currentMultiplier) {
+        elements.currentMultiplier.textContent = '1.00x';
+        elements.currentMultiplier.classList.remove('crashed');
+        // Принудительная перерисовка текста
+        void elements.currentMultiplier.offsetHeight;
+      }
+      
+      // Запускаем график (график тоже установит 1.00x)
       if (crashChart) {
-        if (crashChart.canvas) {
-          crashChart.canvas.style.opacity = '1';
-          crashChart.canvas.style.visibility = 'visible';
-        }
         crashChart.start();
       }
       
