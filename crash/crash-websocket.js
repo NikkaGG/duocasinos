@@ -169,6 +169,18 @@
       updateStats();
     });
 
+    // Игрок отменил ставку
+    ws.socket.on('player_removed', (data) => {
+      console.log('❌ Игрок удален:', data);
+      
+      const index = players.findIndex(p => p.userId === data.userId);
+      if (index !== -1) {
+        players.splice(index, 1);
+        updatePlayersUI();
+        updateStats();
+      }
+    });
+
     // Таймер ожидания
     ws.socket.on('crash_waiting', (data) => {
       console.log('⏳ Ожидание:', data.timeLeft);
@@ -282,8 +294,10 @@
 
     // Обновление множителя
     ws.socket.on('crash_multiplier', (data) => {
-      if (gameState !== GAME_STATES.FLYING) {
-        console.warn('⚠️ Получен множитель вне игры');
+      // Принимаем множитель если игра в FLYING или CRASHED состоянии
+      // Игнорируем только в WAITING (чтобы избежать race condition с crash_started)
+      if (gameState === GAME_STATES.WAITING) {
+        console.warn('⚠️ Получен множитель в WAITING состоянии, игнорируем');
         return;
       }
       
@@ -500,11 +514,39 @@
           playerHasBet = true;
           playerCashedOut = false;
           setButtonState(BUTTON_STATES.CANCEL);
+          
+          // Отправляем на сервер (БАГ ИСПРАВЛЕН: ставка должна отправляться на сервер!)
+          if (ws) {
+            const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
+            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            const nickname = tgUser?.first_name || 'Test';
+            const photoUrl = tgUser?.photo_url || null;
+
+            ws.socket.emit('place_bet', {
+              game: 'crash',
+              userId,
+              nickname,
+              photoUrl,
+              bet: betAmount
+            });
+          }
+          
           console.log(`✅ Ставка на следующий раунд: ${betAmount} chips`);
         }
       } else if (buttonState === BUTTON_STATES.CANCEL) {
         // Отменяем ставку
         await window.GameBalanceAPI.payWinnings(playerBetAmount, 'chips');
+        
+        // Отправляем на сервер (БАГ ИСПРАВЛЕН: отмена должна отправляться на сервер!)
+        if (ws) {
+          const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
+          
+          ws.socket.emit('cancel_bet', {
+            game: 'crash',
+            userId
+          });
+        }
+        
         playerBetAmount = 0;
         playerHasBet = false;
         playerCashedOut = false;

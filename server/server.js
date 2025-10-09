@@ -665,6 +665,33 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Отменить ставку
+  socket.on('cancel_bet', ({ game, userId }) => {
+    console.log(`📥 Получена отмена ставки:`, { game, userId });
+    
+    const gameState = globalGames[game];
+    
+    if (!gameState) {
+      console.error(`❌ Игра ${game} не найдена`);
+      return;
+    }
+    
+    // Удаляем игрока из списка
+    const playerIndex = gameState.players.findIndex(p => p.userId === userId);
+    
+    if (playerIndex !== -1) {
+      const player = gameState.players[playerIndex];
+      gameState.players.splice(playerIndex, 1);
+      console.log(`✅ Ставка игрока ${player.nickname} отменена и удалена из списка`);
+      
+      // Отправляем всем в комнате об удалении игрока
+      io.to(`global_${game}`).emit('player_removed', { userId });
+      console.log(`📤 Отправлено удаление игрока всем в global_${game}`);
+    } else {
+      console.log(`⚠️ Игрок ${userId} не найден в списке ставок`);
+    }
+  });
+
   // Запуск глобальной игры
   function startGlobalGame(game) {
     const gameState = globalGames[game];
