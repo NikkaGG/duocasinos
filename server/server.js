@@ -820,17 +820,22 @@ io.on('connection', (socket) => {
     
     // Увеличиваем множитель каждые 270мс с динамическим шагом
     gameState.gameInterval = setInterval(() => {
-      // Динамический шаг: от +0.01 на малых значениях до +0.5 на больших
-      // Формула: чем больше текущий множитель, тем больше шаг
+      // Динамический шаг: плавно увеличивается с ростом множителя
       let step;
       if (gameState.multiplier < 2.0) {
         step = 0.01; // Очень медленный рост от 1.0 до 2.0
+      } else if (gameState.multiplier < 3.0) {
+        step = 0.02; // Медленный рост от 2.0 до 3.0
       } else if (gameState.multiplier < 5.0) {
-        step = 0.02; // Медленный рост от 2.0 до 5.0
+        step = 0.03; // Начинаем добавлять от 3.0 до 5.0
       } else if (gameState.multiplier < 10.0) {
         step = 0.05; // Средний рост от 5.0 до 10.0
+      } else if (gameState.multiplier < 20.0) {
+        step = 0.1; // Быстрый рост от 10.0 до 20.0
+      } else if (gameState.multiplier < 50.0) {
+        step = 0.2; // Очень быстрый рост от 20.0 до 50.0
       } else {
-        step = 0.1; // Быстрый рост после 10.0
+        step = 0.5; // Максимальный рост после 50.0
       }
       
       gameState.multiplier += step;
