@@ -256,12 +256,12 @@ class CrashChart {
       
       interpolatedPoints.push(p1);
       
-      // Добавляем 3 промежуточные точки между каждыми двумя основными
-      const steps = 3;
+      // Добавляем 2 промежуточные точки между каждыми двумя основными
+      const steps = 2;
       for (let step = 1; step <= steps; step++) {
         const t = step / (steps + 1);
-        // Кубическая интерполяция для плавности
-        const smoothT = t * t * (3 - 2 * t); // Smoothstep
+        // Линейная интерполяция для стабильной скорости
+        const smoothT = t;
         
         const interpX = p1.x + (p2.x - p1.x) * smoothT;
         const interpMult = p1.multiplier + (p2.multiplier - p1.multiplier) * smoothT;
