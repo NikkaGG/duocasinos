@@ -238,12 +238,9 @@ class CrashChart {
     this.ctx.beginPath();
     
     // Подготавливаем массив точек с координатами
-    // Линия растет слева направо
     const chartPoints = visiblePoints.map((point, index) => {
-      // X координата зависит от времени точки (растет вправо)
-      const progress = point.time / elapsed; // 0 в начале, 1 в конце
-      const x = this.padding.left + chartWidth * progress;
-      
+      const timeSincePoint = elapsed - point.time;
+      const x = this.padding.left + chartWidth * (1 - timeSincePoint / this.maxVisibleTime);
       let y = this.getYPosition(point.multiplier);
       const noise = this.getNoise(point.time);
       const noiseAmplitude = 0.3;
