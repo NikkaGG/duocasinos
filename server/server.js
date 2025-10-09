@@ -833,9 +833,11 @@ io.on('connection', (socket) => {
       } else if (gameState.multiplier < 20.0) {
         step = 0.1; // Быстрый рост от 10.0 до 20.0
       } else if (gameState.multiplier < 50.0) {
-        step = 0.2; // Очень быстрый рост от 20.0 до 50.0
+        step = 0.5; // Очень быстрый рост от 20.0 до 50.0
+      } else if (gameState.multiplier < 100.0) {
+        step = 1.0; // Ускоренный рост от 50.0 до 100.0
       } else {
-        step = 0.5; // Максимальный рост после 50.0
+        step = 5.0; // Максимальный рост после 100.0
       }
       
       gameState.multiplier += step;
