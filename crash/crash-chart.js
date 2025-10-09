@@ -237,21 +237,58 @@ class CrashChart {
     
     this.ctx.beginPath();
     
-    visiblePoints.forEach((point, index) => {
-      const timeSincePoint = elapsed - point.time;
-      const x = this.padding.left + chartWidth * (1 - timeSincePoint / this.maxVisibleTime);
-      let y = this.getYPosition(point.multiplier);
+    // Подготавливаем массив точек с координатами
+    // Линия растет слева направо
+    const chartPoints = visiblePoints.map((point, index) => {
+      // X координата зависит от времени точки (растет вправо)
+      const progress = point.time / elapsed; // 0 в начале, 1 в конце
+      const x = this.padding.left + chartWidth * progress;
       
+      let y = this.getYPosition(point.multiplier);
       const noise = this.getNoise(point.time);
       const noiseAmplitude = 0.3;
       y += noise * noiseAmplitude;
-      
-      if (index === 0) {
-        this.ctx.moveTo(x, y);
-      } else {
-        this.ctx.lineTo(x, y);
-      }
+      return { x, y, multiplier: point.multiplier, time: point.time };
     });
+    
+    // Интерполируем промежуточные точки для максимальной плавности
+    const interpolatedPoints = [];
+    for (let i = 0; i < chartPoints.length - 1; i++) {
+      const p1 = chartPoints[i];
+      const p2 = chartPoints[i + 1];
+      
+      interpolatedPoints.push(p1);
+      
+      // Добавляем 3 промежуточные точки между каждыми двумя основными
+      const steps = 3;
+      for (let step = 1; step <= steps; step++) {
+        const t = step / (steps + 1);
+        // Кубическая интерполяция для плавности
+        const smoothT = t * t * (3 - 2 * t); // Smoothstep
+        
+        const interpX = p1.x + (p2.x - p1.x) * smoothT;
+        const interpMult = p1.multiplier + (p2.multiplier - p1.multiplier) * smoothT;
+        let interpY = this.getYPosition(interpMult);
+        
+        // Применяем шум к интерполированным точкам
+        const interpTime = p1.time + (p2.time - p1.time) * smoothT;
+        interpY += this.getNoise(interpTime) * 0.3;
+        
+        interpolatedPoints.push({ x: interpX, y: interpY });
+      }
+    }
+    if (chartPoints.length > 0) {
+      interpolatedPoints.push(chartPoints[chartPoints.length - 1]);
+    }
+    
+    // Рисуем плавную линию через интерполированные точки
+    if (interpolatedPoints.length > 0) {
+      this.ctx.moveTo(interpolatedPoints[0].x, interpolatedPoints[0].y);
+      
+      for (let i = 1; i < interpolatedPoints.length; i++) {
+        this.ctx.lineTo(interpolatedPoints[i].x, interpolatedPoints[i].y);
+      }
+    }
     
     this.ctx.strokeStyle = gradient;
     this.ctx.lineWidth = 3;
@@ -268,15 +305,10 @@ class CrashChart {
     fillGradient.addColorStop(0, 'rgba(84, 164, 80, 0.3)');
     fillGradient.addColorStop(1, 'rgba(84, 164, 80, 0.05)');
     
-    const lastPoint = visiblePoints[visiblePoints.length - 1];
-    const lastX = this.padding.left + chartWidth * (1 - (elapsed - lastPoint.time) / this.maxVisibleTime);
-    let lastY = this.getYPosition(lastPoint.multiplier);
+    // Используем последнюю точку из массива интерполированных точек
+    const lastChartPoint = interpolatedPoints[interpolatedPoints.length - 1];
     
-    const lastNoise = this.getNoise(lastPoint.time);
-    const lastNoiseAmplitude = 0.3;
-    lastY += lastNoise * lastNoiseAmplitude;
-    
-    this.ctx.lineTo(lastX, this.height - this.padding.bottom);
+    this.ctx.lineTo(lastChartPoint.x, this.height - this.padding.bottom);
     this.ctx.lineTo(this.padding.left, this.height - this.padding.bottom);
     this.ctx.closePath();
     
@@ -287,7 +319,7 @@ class CrashChart {
     const baseRadius = 6;
     
     this.ctx.beginPath();
-    this.ctx.arc(lastX, lastY, baseRadius * pulse, 0, Math.PI * 2);
+    this.ctx.arc(lastChartPoint.x, lastChartPoint.y, baseRadius * pulse, 0, Math.PI * 2);
     this.ctx.fillStyle = '#BAA657';
     this.ctx.shadowColor = '#BAA657';
     this.ctx.shadowBlur = 15 * pulse;
@@ -295,12 +327,12 @@ class CrashChart {
     this.ctx.shadowBlur = 0;
     
     this.ctx.beginPath();
-    this.ctx.arc(lastX, lastY, baseRadius * 0.7, 0, Math.PI * 2);
+    this.ctx.arc(lastChartPoint.x, lastChartPoint.y, baseRadius * 0.7, 0, Math.PI * 2);
     this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     this.ctx.fill();
     
     this.ctx.beginPath();
-    this.ctx.arc(lastX, lastY, (baseRadius + 3) * pulse, 0, Math.PI * 2);
+    this.ctx.arc(lastChartPoint.x, lastChartPoint.y, (baseRadius + 3) * pulse, 0, Math.PI * 2);
     this.ctx.strokeStyle = `rgba(186, 166, 87, ${0.5 / pulse})`;
     this.ctx.lineWidth = 2;
     this.ctx.stroke();

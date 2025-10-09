@@ -791,10 +791,11 @@ io.on('connection', (socket) => {
     
     // Целевое время игры в секундах (плавный рост до crashPoint)
     const targetDuration = 8 + (gameState.crashPoint - 1) * 0.5; // 8 сек для 1х + 0.5 сек на каждый 1х
-    const totalSteps = targetDuration * 10; // 10 шагов в секунду (интервал 100мс)
+    const updateInterval = 150; // Интервал обновления в мс
+    const totalSteps = targetDuration * (1000 / updateInterval); // Количество шагов
     let currentStep = 0;
     
-    // Увеличиваем множитель каждые 100мс с плавным ростом
+    // Увеличиваем множитель каждые 150мс с плавным ростом
     gameState.gameInterval = setInterval(() => {
       currentStep++;
       
@@ -823,7 +824,7 @@ io.on('connection', (socket) => {
           multiplier: gameState.multiplier
         });
       }
-    }, 100);
+    }, updateInterval);
   }
   
   // Краш
