@@ -336,8 +336,8 @@
         crashChart.updateMultiplier(data.multiplier);
       }
       
-      // Обновляем live выигрыш на кнопке CASH OUT (всегда когда есть ставка)
-      if (playerHasBet && !playerCashedOut && elements.betButtonChips) {
+      // Обновляем live выигрыш ТОЛЬКО на желтой кнопке CASH OUT
+      if (playerHasBet && !playerCashedOut && buttonState === BUTTON_STATES.CASHOUT && elements.betButtonChips) {
         const potentialWin = Math.floor(playerBetAmount * currentMultiplier);
         elements.betButtonChips.textContent = `${potentialWin} chips`;
       }
