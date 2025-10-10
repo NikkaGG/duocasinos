@@ -127,8 +127,8 @@
   
   // Функция обновления доступности Auto Cash Out секции
   function updateAutoSectionState() {
-    // Блокируем Auto Cash Out только если игра летит И игрок имеет активную ставку (еще не забрал)
-    const isDisabled = gameState === GAME_STATES.FLYING && playerHasBet && !playerCashedOut;
+    // Блокируем Auto Cash Out как только сделана ставка (до момента завершения раунда)
+    const isDisabled = playerHasBet && !playerCashedOut;
     
     if (elements.autoSection) {
       if (isDisabled) {
@@ -479,7 +479,6 @@
       console.log('💥 Краш на:', data.crashPoint);
       gameState = GAME_STATES.CRASHED;
       currentMultiplier = data.crashPoint;
-      updateAutoSectionState(); // Разблокируем Auto Cash Out
       
       // Анимация краша на графике (график сам обновит текст множителя)
       if (crashChart) {
@@ -513,6 +512,9 @@
       } else {
         setButtonState(BUTTON_STATES.BET);
       }
+      
+      // Обновляем состояние Auto Cash Out ПОСЛЕ сброса флагов
+      updateAutoSectionState();
     });
   }
 
