@@ -127,7 +127,8 @@
   
   // Функция обновления доступности Auto Cash Out секции
   function updateAutoSectionState() {
-    const isDisabled = gameState === GAME_STATES.FLYING;
+    // Блокируем Auto Cash Out только если игра летит И игрок имеет активную ставку (еще не забрал)
+    const isDisabled = gameState === GAME_STATES.FLYING && playerHasBet && !playerCashedOut;
     
     if (elements.autoSection) {
       if (isDisabled) {
@@ -348,15 +349,18 @@
           // Сбрасываем флаг и активируем ставку для этого раунда
           betPlacedDuringFlight = false;
           setButtonState(BUTTON_STATES.CASHOUT);
+          updateAutoSectionState(); // Блокируем Auto Cash Out так как ставка активна
           console.log('✅ Ставка активирована для текущего раунда');
         } else {
           // Ставка была сделана в период ожидания - активна для текущего раунда
           setButtonState(BUTTON_STATES.CASHOUT);
+          updateAutoSectionState(); // Блокируем Auto Cash Out так как ставка активна
           console.log('✅ Ставка активна для текущего раунда');
         }
       } else if (playerHasBet && playerCashedOut) {
         // Уже забрали - показываем BET для следующего раунда
         setButtonState(BUTTON_STATES.BET);
+        updateAutoSectionState(); // Разблокируем Auto Cash Out так как уже забрали
       }
     });
 
@@ -537,6 +541,7 @@
     playerCashedOut = true;
     betPlacedDuringFlight = false; // Сбрасываем флаг
     setButtonState(BUTTON_STATES.BET);
+    updateAutoSectionState(); // Разблокируем Auto Cash Out после забирания
     
     // Отправляем на сервер
     if (ws) {
@@ -568,6 +573,7 @@
           playerHasBet = true;
           playerCashedOut = false;
           setButtonState(BUTTON_STATES.CANCEL);
+          updateAutoSectionState(); // Блокируем Auto Cash Out при размещении ставки
           
           // Отправляем на сервер
           if (ws) {
@@ -603,6 +609,7 @@
           playerCashedOut = false;
           betPlacedDuringFlight = true; // Помечаем что ставка сделана во время полета
           setButtonState(BUTTON_STATES.CANCEL);
+          updateAutoSectionState(); // Блокируем Auto Cash Out (хотя уже заблокировано, но для консистентности)
           
           // НЕ отправляем на сервер ставку для следующего раунда во время текущего
           // Отправим только после начала нового раунда
@@ -628,6 +635,7 @@
         playerCashedOut = false;
         betPlacedDuringFlight = false; // Сбрасываем флаг
         setButtonState(BUTTON_STATES.BET);
+        updateAutoSectionState(); // Разблокируем Auto Cash Out после отмены ставки
         console.log('❌ Ставка отменена');
       } else if (buttonState === BUTTON_STATES.CASHOUT) {
         // Забираем выигрыш
