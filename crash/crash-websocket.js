@@ -26,6 +26,10 @@
   let autoCashOutMultiplier = 2.0;
   let crashChart = null;
   let crashHistory = [];
+  
+  // Debounce для обновлений UI
+  let updateUIScheduled = false;
+  let playerElementsCache = new Map();
 
   // ============ ЭЛЕМЕНТЫ ============
   const elements = {
@@ -140,8 +144,7 @@
       console.log('🔄 Crash состояние:', state);
       
       players = state.players || [];
-      updatePlayersUI();
-      updateStats();
+      scheduleUIUpdate();
       
       // НЕ сбрасываем локальное состояние игрока
       // playerHasBet, playerCashedOut, playerBetAmount остаются неизменными
@@ -165,8 +168,7 @@
         });
       }
       
-      updatePlayersUI();
-      updateStats();
+      scheduleUIUpdate();
     });
 
     // Игрок отменил ставку
@@ -176,8 +178,7 @@
       const index = players.findIndex(p => p.userId === data.userId);
       if (index !== -1) {
         players.splice(index, 1);
-        updatePlayersUI();
-        updateStats();
+        scheduleUIUpdate();
       }
     });
 
@@ -331,8 +332,7 @@
         player.multiplier = data.multiplier;
       }
       
-      updatePlayersUI();
-      updateStats();
+      scheduleUIUpdate();
     });
 
     // Краш
@@ -606,55 +606,110 @@
     });
   }
 
-  // ============ ОБНОВЛЕНИЕ UI ============
+  // ============ ОБНОВЛЕНИЕ UI (ОПТИМИЗИРОВАНО) ============
+  
+  // Планирует обновление UI через requestAnimationFrame
+  function scheduleUIUpdate() {
+    if (updateUIScheduled) return;
+    updateUIScheduled = true;
+    
+    requestAnimationFrame(() => {
+      updateUIScheduled = false;
+      updatePlayersUI();
+      updateStats();
+    });
+  }
+  
   function updatePlayersUI() {
     if (!elements.playersList) return;
 
-    // Очищаем
-    elements.playersList.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+    const currentPlayerIds = new Set();
 
-    // Добавляем игроков
+    // Добавляем или обновляем игроков
     players.forEach(player => {
       if (!player || !player.userId) return;
+      currentPlayerIds.add(player.userId);
       
-      const playerEl = document.createElement('div');
-      playerEl.className = player.cashout ? 'win' : 'default';
+      let playerEl = playerElementsCache.get(player.userId);
+      let needsUpdate = false;
       
-      // Аватарка
-      let avatarHTML = '';
-      if (player.photoUrl) {
-        avatarHTML = `<div class="avatar-2" style="background-image: url(${player.photoUrl}); background-size: cover;"></div>`;
-      } else {
-        const initial = player.nickname[0].toUpperCase();
-        avatarHTML = `<div class="avatar-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">${initial}</div>`;
+      if (!playerEl) {
+        playerEl = document.createElement('div');
+        playerEl.dataset.userId = player.userId;
+        playerElementsCache.set(player.userId, playerEl);
+        needsUpdate = true;
       }
       
-      // Маскируем ник
-      const maskedNick = player.nickname.length > 2 
-        ? player.nickname[0] + '***' + player.nickname[player.nickname.length - 1]
-        : player.nickname;
+      // Проверяем нужно ли обновлять содержимое
+      const newClassName = player.cashout ? 'win' : 'default';
+      if (playerEl.className !== newClassName) {
+        playerEl.className = newClassName;
+        needsUpdate = true;
+      }
       
-      const multiplierText = player.multiplier ? `${player.multiplier.toFixed(2)}x` : '-';
-      const cashoutText = player.cashout ? player.cashout : '-';
+      if (needsUpdate || playerEl._lastBet !== player.bet || 
+          playerEl._lastCashout !== player.cashout || 
+          playerEl._lastMultiplier !== player.multiplier) {
+        
+        // Аватарка
+        let avatarHTML = '';
+        if (player.photoUrl) {
+          avatarHTML = `<div class="avatar-2" style="background-image: url(${player.photoUrl}); background-size: cover;"></div>`;
+        } else {
+          const initial = player.nickname[0].toUpperCase();
+          avatarHTML = `<div class="avatar-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">${initial}</div>`;
+        }
+        
+        // Маскируем ник
+        const maskedNick = player.nickname.length > 2 
+          ? player.nickname[0] + '***' + player.nickname[player.nickname.length - 1]
+          : player.nickname;
+        
+        const multiplierText = player.multiplier ? `${player.multiplier.toFixed(2)}x` : '-';
+        const cashoutText = player.cashout ? player.cashout : '-';
+        
+        playerEl.innerHTML = `
+          <div class="acc-inf">
+            <div class="div-wrapper-2">${avatarHTML}</div>
+            <div class="div-wrapper-3"><div class="text-wrapper-22">${maskedNick}</div></div>
+          </div>
+          <div class="div-wrapper-3"><div class="text-wrapper-23">${player.bet}</div></div>
+          <div class="div-wrapper-3"><div class="text-wrapper-24">${multiplierText}</div></div>
+          <div class="div-wrapper-4"><div class="text-wrapper-25">${cashoutText}</div></div>
+        `;
+        
+        playerEl._lastBet = player.bet;
+        playerEl._lastCashout = player.cashout;
+        playerEl._lastMultiplier = player.multiplier;
+      }
       
-      playerEl.innerHTML = `
-        <div class="acc-inf">
-          <div class="div-wrapper-2">${avatarHTML}</div>
-          <div class="div-wrapper-3"><div class="text-wrapper-22">${maskedNick}</div></div>
-        </div>
-        <div class="div-wrapper-3"><div class="text-wrapper-23">${player.bet}</div></div>
-        <div class="div-wrapper-3"><div class="text-wrapper-24">${multiplierText}</div></div>
-        <div class="div-wrapper-4"><div class="text-wrapper-25">${cashoutText}</div></div>
-      `;
-      
-      elements.playersList.appendChild(playerEl);
+      fragment.appendChild(playerEl);
     });
+
+    // Удаляем игроков которых больше нет
+    for (const [userId, element] of playerElementsCache.entries()) {
+      if (!currentPlayerIds.has(userId)) {
+        playerElementsCache.delete(userId);
+      }
+    }
+
+    // Обновляем DOM одним разом
+    elements.playersList.innerHTML = '';
+    elements.playersList.appendChild(fragment);
   }
 
   function updateStats() {
-    const totalBets = players.reduce((sum, p) => sum + (p.bet || 0), 0);
-    const totalWin = players.reduce((sum, p) => sum + (p.cashout || 0), 0);
+    // Считаем все значения за один проход
+    let totalBets = 0;
+    let totalWin = 0;
     const betsCount = players.length;
+    
+    for (let i = 0; i < players.length; i++) {
+      const p = players[i];
+      totalBets += p.bet || 0;
+      totalWin += p.cashout || 0;
+    }
     
     // Total Bets
     if (elements.totalBetsCount) {

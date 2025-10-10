@@ -19,6 +19,17 @@ class CrashChart {
     this.padding = { top: 20, right: 20, bottom: 30, left: 50 };
     this.maxVisibleTime = 20000;
     
+    // Кэшируем градиенты для производительности
+    this.lineGradient = null;
+    this.fillGradient = null;
+    this.gradientDirty = true;
+    
+    // Кэш для расчетов
+    this.cachedMaxMultiplier = 2.5;
+    this.cachedLogMin = 0;
+    this.cachedLogMax = 0;
+    this.cachedChartHeight = 0;
+    
     this.init();
   }
   
@@ -50,6 +61,10 @@ class CrashChart {
     this.canvas.style.height = `${this.height}px`;
     
     this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    
+    // Пересоздаем градиенты после изменения размера
+    this.gradientDirty = true;
+    this.cachedChartHeight = this.height - this.padding.top - this.padding.bottom;
   }
   
   start() {
@@ -162,22 +177,25 @@ class CrashChart {
   }
   
   getYPosition(multiplier) {
-    const chartHeight = this.height - this.padding.top - this.padding.bottom;
-    const minMultiplier = 1.0;
-    const maxMultiplier = this.getMaxMultiplier();
-    
-    const logMin = Math.log(minMultiplier);
-    const logMax = Math.log(maxMultiplier);
-    const logValue = Math.log(Math.max(multiplier, minMultiplier));
-    
-    const ratio = (logValue - logMin) / (logMax - logMin);
-    const y = this.height - this.padding.bottom - (ratio * chartHeight);
+    const logValue = Math.log(Math.max(multiplier, 1.0));
+    const ratio = (logValue - this.cachedLogMin) / (this.cachedLogMax - this.cachedLogMin);
+    const y = this.height - this.padding.bottom - (ratio * this.cachedChartHeight);
     
     return Math.max(this.padding.top, Math.min(this.height - this.padding.bottom, y));
   }
   
+  updateCachedValues() {
+    this.cachedMaxMultiplier = this.getMaxMultiplier();
+    this.cachedLogMin = Math.log(1.0);
+    this.cachedLogMax = Math.log(this.cachedMaxMultiplier);
+    this.cachedChartHeight = this.height - this.padding.top - this.padding.bottom;
+  }
+  
   draw() {
     this.clear();
+    
+    // Обновляем кэшированные значения раз за кадр
+    this.updateCachedValues();
     
     this.drawGrid();
     
@@ -194,30 +212,27 @@ class CrashChart {
   drawGrid() {
     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
     this.ctx.lineWidth = 1;
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    this.ctx.font = '10px Montserrat';
+    this.ctx.textAlign = 'right';
     
-    const minMultiplier = 1.0;
-    const maxMultiplier = this.getMaxMultiplier();
-    
-    const logMin = Math.log(minMultiplier);
-    const logMax = Math.log(maxMultiplier);
+    // Рисуем все линии одним путем для производительности
+    this.ctx.beginPath();
     
     const horizontalLines = 5;
     for (let i = 0; i <= horizontalLines; i++) {
-      const logValue = logMax - (logMax - logMin) * (i / horizontalLines);
+      const logValue = this.cachedLogMax - (this.cachedLogMax - this.cachedLogMin) * (i / horizontalLines);
       const multiplierValue = Math.exp(logValue);
       
       const y = this.getYPosition(multiplierValue);
       
-      this.ctx.beginPath();
       this.ctx.moveTo(this.padding.left, y);
       this.ctx.lineTo(this.width - this.padding.right, y);
-      this.ctx.stroke();
       
-      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-      this.ctx.font = '10px Montserrat';
-      this.ctx.textAlign = 'right';
       this.ctx.fillText(`${multiplierValue.toFixed(2)}x`, this.padding.left - 5, y + 4);
     }
+    
+    this.ctx.stroke();
   }
   
   drawChart() {
@@ -230,43 +245,61 @@ class CrashChart {
     
     if (visiblePoints.length < 2) return;
     
-    const gradient = this.ctx.createLinearGradient(
-      this.padding.left, 
-      0, 
-      this.width - this.padding.right, 
-      0
-    );
-    gradient.addColorStop(0, 'rgba(64, 123, 61, 0.8)');
-    gradient.addColorStop(0.5, 'rgba(84, 164, 80, 1)');
-    gradient.addColorStop(1, 'rgba(186, 166, 87, 1)');
+    // Создаем или используем кэшированные градиенты
+    if (this.gradientDirty || !this.lineGradient) {
+      this.lineGradient = this.ctx.createLinearGradient(
+        this.padding.left, 
+        0, 
+        this.width - this.padding.right, 
+        0
+      );
+      this.lineGradient.addColorStop(0, 'rgba(64, 123, 61, 0.8)');
+      this.lineGradient.addColorStop(0.5, 'rgba(84, 164, 80, 1)');
+      this.lineGradient.addColorStop(1, 'rgba(186, 166, 87, 1)');
+      
+      this.fillGradient = this.ctx.createLinearGradient(
+        0, 
+        this.padding.top, 
+        0, 
+        this.height - this.padding.bottom
+      );
+      this.fillGradient.addColorStop(0, 'rgba(84, 164, 80, 0.3)');
+      this.fillGradient.addColorStop(1, 'rgba(84, 164, 80, 0.05)');
+      
+      this.gradientDirty = false;
+    }
     
     this.ctx.beginPath();
     
+    // Предвыделяем массив для производительности
+    const chartPoints = new Array(visiblePoints.length);
+    const noiseAmplitude = 0.3;
+    
     // Подготавливаем массив точек с координатами
-    const chartPoints = visiblePoints.map((point, index) => {
+    for (let i = 0; i < visiblePoints.length; i++) {
+      const point = visiblePoints[i];
       const timeSincePoint = elapsed - point.time;
       const x = this.padding.left + chartWidth * (1 - timeSincePoint / this.maxVisibleTime);
       let y = this.getYPosition(point.multiplier);
-      const noise = this.getNoise(point.time);
-      const noiseAmplitude = 0.3;
-      y += noise * noiseAmplitude;
-      return { x, y, multiplier: point.multiplier, time: point.time };
-    });
+      y += this.getNoise(point.time) * noiseAmplitude;
+      chartPoints[i] = { x, y, multiplier: point.multiplier, time: point.time };
+    }
     
     // Интерполируем промежуточные точки для максимальной плавности
-    const interpolatedPoints = [];
+    const steps = 2;
+    const interpolatedLength = (chartPoints.length - 1) * (steps + 1) + 1;
+    const interpolatedPoints = new Array(interpolatedLength);
+    let idx = 0;
+    
     for (let i = 0; i < chartPoints.length - 1; i++) {
       const p1 = chartPoints[i];
       const p2 = chartPoints[i + 1];
       
-      interpolatedPoints.push(p1);
+      interpolatedPoints[idx++] = p1;
       
       // Добавляем 2 промежуточные точки между каждыми двумя основными
-      const steps = 2;
       for (let step = 1; step <= steps; step++) {
-        const t = step / (steps + 1);
-        // Линейная интерполяция для стабильной скорости
-        const smoothT = t;
+        const smoothT = step / (steps + 1);
         
         const interpX = p1.x + (p2.x - p1.x) * smoothT;
         const interpMult = p1.multiplier + (p2.multiplier - p1.multiplier) * smoothT;
@@ -274,13 +307,13 @@ class CrashChart {
         
         // Применяем шум к интерполированным точкам
         const interpTime = p1.time + (p2.time - p1.time) * smoothT;
-        interpY += this.getNoise(interpTime) * 0.3;
+        interpY += this.getNoise(interpTime) * noiseAmplitude;
         
-        interpolatedPoints.push({ x: interpX, y: interpY });
+        interpolatedPoints[idx++] = { x: interpX, y: interpY };
       }
     }
     if (chartPoints.length > 0) {
-      interpolatedPoints.push(chartPoints[chartPoints.length - 1]);
+      interpolatedPoints[idx] = chartPoints[chartPoints.length - 1];
     }
     
     // Рисуем плавную линию через интерполированные точки
@@ -292,20 +325,11 @@ class CrashChart {
       }
     }
     
-    this.ctx.strokeStyle = gradient;
+    this.ctx.strokeStyle = this.lineGradient;
     this.ctx.lineWidth = 3;
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
     this.ctx.stroke();
-    
-    const fillGradient = this.ctx.createLinearGradient(
-      0, 
-      this.padding.top, 
-      0, 
-      this.height - this.padding.bottom
-    );
-    fillGradient.addColorStop(0, 'rgba(84, 164, 80, 0.3)');
-    fillGradient.addColorStop(1, 'rgba(84, 164, 80, 0.05)');
     
     // Используем последнюю точку из массива интерполированных точек
     const lastChartPoint = interpolatedPoints[interpolatedPoints.length - 1];
@@ -314,7 +338,7 @@ class CrashChart {
     this.ctx.lineTo(this.padding.left, this.height - this.padding.bottom);
     this.ctx.closePath();
     
-    this.ctx.fillStyle = fillGradient;
+    this.ctx.fillStyle = this.fillGradient;
     this.ctx.fill();
     
     const pulse = Math.sin(this.pulseAnimation) * 0.3 + 1;
