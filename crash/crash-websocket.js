@@ -147,6 +147,25 @@
       players = state.players || [];
       scheduleUIUpdate();
       
+      // Синхронизируем состояние игры при подключении
+      if (state.status === 'flying' && gameState === GAME_STATES.WAITING) {
+        // Игра уже идет, переключаем состояние
+        gameState = GAME_STATES.FLYING;
+        
+        // Скрываем waiting overlay
+        if (elements.waitingRoot) {
+          elements.waitingRoot.classList.add('hidden');
+        }
+        if (elements.multiplierLayer) {
+          elements.multiplierLayer.style.display = 'flex';
+        }
+        
+        // Запускаем график если есть
+        if (crashChart && !crashChart.isCrashed) {
+          crashChart.start();
+        }
+      }
+      
       // НЕ сбрасываем локальное состояние игрока
       // playerHasBet, playerCashedOut, playerBetAmount остаются неизменными
     });

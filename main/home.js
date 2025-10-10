@@ -363,6 +363,9 @@
         const existingPrizes = this.streakContainer.querySelectorAll('.img-2, .img-3');
         const frameElement = this.streakContainer.querySelector('.frame');
 
+        // Создаем контейнер конвейера
+        const conveyorContainer = document.createElement('div');
+        conveyorContainer.className = 'smooth-conveyor-container';
 
         // Создаем движущуюся дорожку
         const conveyorTrack = document.createElement('div');
