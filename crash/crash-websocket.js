@@ -163,6 +163,17 @@
     ws.socket.on('game_state_sync', (state) => {
       console.log('🔄 Crash состояние:', state);
       
+      // Убираем загрузку при первом получении данных
+      if (!dataReceived && elements.loadingOverlay) {
+        dataReceived = true;
+        setTimeout(() => {
+          elements.loadingOverlay.style.opacity = '0';
+          setTimeout(() => {
+            elements.loadingOverlay.style.display = 'none';
+          }, 500);
+        }, 300);
+      }
+      
       players = state.players || [];
       scheduleUIUpdate();
       
@@ -174,10 +185,16 @@
         
         // Скрываем waiting overlay
         if (elements.waitingRoot) {
-          elements.waitingRoot.classList.add('hidden');
+          elements.waitingRoot.style.display = 'none';
         }
         if (elements.multiplierLayer) {
           elements.multiplierLayer.style.display = 'flex';
+        }
+        
+        // Показываем график
+        if (crashChart && crashChart.canvas) {
+          crashChart.canvas.style.opacity = '1';
+          crashChart.canvas.style.visibility = 'visible';
         }
         
         // Запускаем график если есть
