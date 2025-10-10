@@ -606,6 +606,12 @@ io.on('connection', (socket) => {
       timer: globalGames[game].timer,
       startTime: globalGames[game].startTime ? globalGames[game].startTime.toISOString() : null
     };
+    
+    // Для crash игры добавляем текущий множитель
+    if (game === 'crash') {
+      cleanState.multiplier = globalGames[game].multiplier || 1.00;
+    }
+    
     socket.emit('game_state_sync', cleanState);
   });
 

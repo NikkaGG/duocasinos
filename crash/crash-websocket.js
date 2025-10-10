@@ -197,6 +197,51 @@
           crashChart.canvas.style.visibility = 'visible';
         }
         
+        // Восстанавливаем историю графика
+        if (crashChart && !crashChart.isCrashed && state.startTime) {
+          const startTime = new Date(state.startTime).getTime();
+          const now = Date.now();
+          const elapsed = now - startTime;
+          
+          // Восстанавливаем startTime графика
+          crashChart.startTime = startTime;
+          crashChart.points = [];
+          
+          // Генерируем историю точек от 1.00x до текущего момента
+          // Рост: +0.02x каждые 350ms
+          const updateInterval = 350;
+          const step = 0.02;
+          const numUpdates = Math.floor(elapsed / updateInterval);
+          
+          // Добавляем начальную точку
+          crashChart.points.push({ time: 0, multiplier: 1.00 });
+          
+          // Генерируем промежуточные точки
+          for (let i = 1; i <= numUpdates; i++) {
+            const pointTime = i * updateInterval;
+            const pointMultiplier = parseFloat((1.00 + i * step).toFixed(2));
+            crashChart.points.push({ time: pointTime, multiplier: pointMultiplier });
+          }
+          
+          // Используем множитель с сервера если он есть, иначе вычисляем
+          const serverMultiplier = state.multiplier || null;
+          const calculatedMultiplier = serverMultiplier || parseFloat((1.00 + numUpdates * step).toFixed(2));
+          currentMultiplier = calculatedMultiplier;
+          
+          // Если есть множитель с сервера и он отличается - добавляем точку с ним
+          if (serverMultiplier && serverMultiplier > calculatedMultiplier) {
+            crashChart.points.push({ time: elapsed, multiplier: serverMultiplier });
+          }
+          
+          // Обновляем отображение
+          if (elements.currentMultiplier) {
+            elements.currentMultiplier.textContent = `${calculatedMultiplier.toFixed(2)}x`;
+            elements.currentMultiplier.classList.remove('crashed');
+          }
+          
+          console.log(`📊 Восстановлено ${crashChart.points.length} точек графика, множитель: ${calculatedMultiplier.toFixed(2)}x`);
+        }
+        
         // Запускаем график если есть
         if (crashChart && !crashChart.isCrashed) {
           crashChart.start();
