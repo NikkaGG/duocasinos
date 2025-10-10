@@ -274,7 +274,7 @@
     });
 
     // Игра началась
-    ws.socket.on('crash_started', (data) => {
+    ws.socket.on('crash_started', async (data) => {
       console.log('🚀 Crash начался!');
       gameState = GAME_STATES.FLYING;
       currentMultiplier = 1.00;
