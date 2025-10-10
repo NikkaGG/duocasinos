@@ -30,10 +30,6 @@ class CrashChart {
     this.cachedLogMax = 0;
     this.cachedChartHeight = 0;
     
-    // Плавное масштабирование для устранения тряски при больших коэффициентах
-    this.smoothedMaxMultiplier = 2.5;
-    this.targetMaxMultiplier = 2.5;
-    
     this.init();
   }
   
@@ -78,10 +74,6 @@ class CrashChart {
     this.isCrashed = false;
     this.crashAnimation = null;
     this.noiseOffset = Math.random() * 1000;
-    
-    // Сброс плавного масштабирования
-    this.smoothedMaxMultiplier = 2.5;
-    this.targetMaxMultiplier = 2.5;
     
     this.points.push({
       time: 0,
@@ -169,32 +161,16 @@ class CrashChart {
     const mult = this.currentMultiplier;
     
     if (mult <= 2) {
-      this.targetMaxMultiplier = 2.5;
+      return 2.5;
     } else if (mult <= 10) {
       // Плавная интерполяция от 2.5 до 12
       // При mult=2: return 2.5, при mult=10: return 12
       const t = (mult - 2) / (10 - 2); // 0 до 1
-      this.targetMaxMultiplier = 2.5 + (12 - 2.5) * t;
+      return 2.5 + (12 - 2.5) * t;
     } else {
-      // Для высоких множителей используем фиксированные ступени вместо пропорционального масштаба
-      // Это устраняет постоянное изменение масштаба при больших коэффициентах
-      if (mult <= 20) {
-        this.targetMaxMultiplier = 24;
-      } else if (mult <= 50) {
-        this.targetMaxMultiplier = 60;
-      } else if (mult <= 100) {
-        this.targetMaxMultiplier = 120;
-      } else {
-        // Для очень высоких значений используем округление вверх до ближайшей сотни
-        this.targetMaxMultiplier = Math.ceil(mult / 100) * 100 + 20;
-      }
+      // Для высоких множителей добавляем 20% сверху
+      return mult * 1.2;
     }
-    
-    // Плавная интерполяция к целевому масштабу (lerp с коэффициентом 0.1)
-    // Это устраняет резкие скачки и тряску линии
-    this.smoothedMaxMultiplier += (this.targetMaxMultiplier - this.smoothedMaxMultiplier) * 0.1;
-    
-    return this.smoothedMaxMultiplier;
   }
   
   getNoise(time) {
