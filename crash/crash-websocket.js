@@ -869,9 +869,9 @@
   // Переключатель Auto Cash Out
   if (elements.autoSwitcher) {
     elements.autoSwitcher.addEventListener('click', () => {
-      // Блокируем во время полета
-      if (gameState === GAME_STATES.FLYING) {
-        console.log('⚠️ Auto Cash Out нельзя изменить во время игры');
+      // Блокируем если есть активная ставка
+      if (playerHasBet && !playerCashedOut) {
+        console.log('⚠️ Auto Cash Out нельзя изменить когда есть активная ставка');
         return;
       }
       
@@ -895,8 +895,8 @@
   if (elements.autoInput) {
     elements.autoInput.contentEditable = 'true';
     elements.autoInput.addEventListener('input', (e) => {
-      // Блокируем во время полета
-      if (gameState === GAME_STATES.FLYING) {
+      // Блокируем если есть активная ставка
+      if (playerHasBet && !playerCashedOut) {
         e.preventDefault();
         return;
       }
@@ -911,9 +911,9 @@
   // Очистка
   if (elements.autoClear) {
     elements.autoClear.addEventListener('click', () => {
-      // Блокируем во время полета
-      if (gameState === GAME_STATES.FLYING) {
-        console.log('⚠️ Auto Cash Out нельзя изменить во время игры');
+      // Блокируем если есть активная ставка
+      if (playerHasBet && !playerCashedOut) {
+        console.log('⚠️ Auto Cash Out нельзя изменить когда есть активная ставка');
         return;
       }
       
