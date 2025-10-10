@@ -309,8 +309,8 @@
         crashChart.updateMultiplier(data.multiplier);
       }
       
-      // Обновляем live выигрыш в Auto Cash Out
-      if (autoCashOutEnabled && playerHasBet && !playerCashedOut && elements.betButtonChips) {
+      // Обновляем live выигрыш на кнопке CASH OUT (всегда когда есть ставка)
+      if (playerHasBet && !playerCashedOut && elements.betButtonChips) {
         const potentialWin = Math.floor(playerBetAmount * currentMultiplier);
         elements.betButtonChips.textContent = `${potentialWin} chips`;
       }
@@ -434,7 +434,10 @@
         
       case BUTTON_STATES.CASHOUT:
         if (textEl) textEl.textContent = 'CASH OUT';
-        if (chipsEl) chipsEl.textContent = '';
+        if (chipsEl) {
+          const potentialWin = Math.floor(playerBetAmount * currentMultiplier);
+          chipsEl.textContent = `${potentialWin} chips`;
+        }
         betButton.style.background = 'linear-gradient(90deg, #877440 0%, #BAA657 100%)';
         break;
     }
