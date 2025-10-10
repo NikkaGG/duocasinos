@@ -818,31 +818,10 @@ io.on('connection', (socket) => {
     
     const updateInterval = 270; // Интервал обновления в мс
     
-    // Увеличиваем множитель каждые 270мс с динамическим шагом
+    // Увеличиваем множитель каждые 270мс с фиксированным шагом +0.03x
     gameState.gameInterval = setInterval(() => {
-      // Динамический шаг с рандомом: плавно увеличивается с ростом множителя
-      let baseStep;
-      if (gameState.multiplier < 3.0) {
-        baseStep = 0.03; // Начальный рост от 1.0 до 3.0
-      } else if (gameState.multiplier < 5.0) {
-        baseStep = 0.05; // от 3.0 до 5.0
-      } else if (gameState.multiplier < 10.0) {
-        baseStep = 0.1; // от 5.0 до 10.0
-      } else if (gameState.multiplier < 20.0) {
-        baseStep = 0.2; // от 10.0 до 20.0
-      } else if (gameState.multiplier < 50.0) {
-        baseStep = 0.5; // от 20.0 до 50.0
-      } else if (gameState.multiplier < 100.0) {
-        baseStep = 1.0; // от 50.0 до 100.0
-      } else {
-        baseStep = 5.0; // Максимальный рост после 100.0
-      }
-      
-      // Добавляем случайную вариацию ±30% от базового шага
-      const randomFactor = 0.7 + Math.random() * 0.6; // От 0.7 до 1.3
-      const step = baseStep * randomFactor;
-      
-      gameState.multiplier += step;
+      // Фиксированный шаг роста +0.03x
+      gameState.multiplier += 0.03;
       gameState.multiplier = parseFloat(gameState.multiplier.toFixed(2));
       
       // Проверяем, достигли ли crashPoint
