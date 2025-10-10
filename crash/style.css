@@ -600,10 +600,7 @@
   font-size: 48px;
   letter-spacing: -1.2px;
   color: #ffffff;
-  text-shadow: 
-    0 0 20px rgba(255,255,255,0.8),
-    0 0 40px rgba(255,255,255,0.4),
-    0 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   display: block;
   
   /* КРИТИЧЕСКАЯ ОПТИМИЗАЦИЯ LCP */
@@ -617,10 +614,7 @@
 /* Crash visual state */
 .multiplier-label.crashed {
   color: #ff2b52;
-  text-shadow: 
-    0 0 20px rgba(255,43,82,0.8),
-    0 0 40px rgba(255,43,82,0.4),
-    0 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 /* Loading bar rectangle width will be controlled by JS */
