@@ -124,6 +124,24 @@
   }
 
   // ============ WEBSOCKET ============
+  
+  // Функция обновления доступности Auto Cash Out секции
+  function updateAutoSectionState() {
+    const isDisabled = gameState === GAME_STATES.FLYING;
+    
+    if (elements.autoSection) {
+      if (isDisabled) {
+        elements.autoSection.style.opacity = '0.5';
+        elements.autoSection.style.pointerEvents = 'none';
+        elements.autoSection.style.cursor = 'not-allowed';
+      } else {
+        elements.autoSection.style.opacity = '1';
+        elements.autoSection.style.pointerEvents = 'auto';
+        elements.autoSection.style.cursor = 'default';
+      }
+    }
+  }
+  
   function waitForWebSocket() {
     if (window.GameWebSocket && window.GameWebSocket.socket && window.GameWebSocket.connected) {
       ws = window.GameWebSocket;
@@ -151,6 +169,7 @@
       if (state.status === 'flying' && gameState === GAME_STATES.WAITING) {
         // Игра уже идет, переключаем состояние
         gameState = GAME_STATES.FLYING;
+        updateAutoSectionState(); // Блокируем Auto Cash Out
         
         // Скрываем waiting overlay
         if (elements.waitingRoot) {
@@ -207,6 +226,7 @@
       console.log('⏳ Ожидание:', data.timeLeft);
       gameState = GAME_STATES.WAITING;
       currentMultiplier = 1.00;
+      updateAutoSectionState(); // Разблокируем Auto Cash Out
       
       // Сбрасываем визуальный коэффициент в период ожидания
       if (elements.currentMultiplier) {
@@ -257,6 +277,7 @@
       console.log('🚀 Crash начался!');
       gameState = GAME_STATES.FLYING;
       currentMultiplier = 1.00;
+      updateAutoSectionState(); // Блокируем Auto Cash Out
       
       // Убираем загрузку ТОЛЬКО КОГДА ПОЛУЧЕНЫ ДАННЫЕ
       if (!dataReceived && elements.loadingOverlay) {
@@ -386,6 +407,7 @@
       console.log('💥 Краш на:', data.crashPoint);
       gameState = GAME_STATES.CRASHED;
       currentMultiplier = data.crashPoint;
+      updateAutoSectionState(); // Разблокируем Auto Cash Out
       
       // Анимация краша на графике (график сам обновит текст множителя)
       if (crashChart) {
@@ -788,6 +810,12 @@
   // Переключатель Auto Cash Out
   if (elements.autoSwitcher) {
     elements.autoSwitcher.addEventListener('click', () => {
+      // Блокируем во время полета
+      if (gameState === GAME_STATES.FLYING) {
+        console.log('⚠️ Auto Cash Out нельзя изменить во время игры');
+        return;
+      }
+      
       autoCashOutEnabled = !autoCashOutEnabled;
       
       if (elements.autoSwitcherBg) {
@@ -808,6 +836,12 @@
   if (elements.autoInput) {
     elements.autoInput.contentEditable = 'true';
     elements.autoInput.addEventListener('input', (e) => {
+      // Блокируем во время полета
+      if (gameState === GAME_STATES.FLYING) {
+        e.preventDefault();
+        return;
+      }
+      
       let value = e.target.textContent.replace(/[^0-9.]/g, '');
       const num = parseFloat(value) || 2.0;
       autoCashOutMultiplier = Math.max(1.01, Math.min(100, num));
@@ -818,6 +852,12 @@
   // Очистка
   if (elements.autoClear) {
     elements.autoClear.addEventListener('click', () => {
+      // Блокируем во время полета
+      if (gameState === GAME_STATES.FLYING) {
+        console.log('⚠️ Auto Cash Out нельзя изменить во время игры');
+        return;
+      }
+      
       if (elements.autoInput) {
         elements.autoInput.textContent = '2.00';
         autoCashOutMultiplier = 2.0;
