@@ -1,9 +1,20 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- DNS Prefetch and Preconnect for critical external resources -->
+    <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+    <link rel="preconnect" href="https://github.com" crossorigin>
+    <link rel="preconnect" href="https://telegram.org" crossorigin>
+    <link rel="dns-prefetch" href="https://raw.githubusercontent.com">
+    <link rel="dns-prefetch" href="https://github.com">
+    
+    <!-- Preload critical images for LCP optimization -->
+    <link rel="preload" as="image" href="https://github.com/Pacific1a/img/blob/main/imgALL/Group%208.png?raw=true">
+    <link rel="preload" as="image" href="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/very-high-prize.svg">
+    
     <link rel="stylesheet" href="main/globals.css" />
     <link rel="stylesheet" href="main/styleguide.css" />
     <link rel="stylesheet" href="main/style.css" />
@@ -142,17 +153,17 @@
           <div class="nickname"><div class="text-wrapper">Nickname</div></div>
         </div>
         <div class="add-funds">
-          <img class="img" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/image.svg" />
+          <img class="img" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/image.svg" fetchpriority="high" />
           <div class="div">Deposite</div>
         </div>
         <div class="balance-1">
           <div class="group-ico-1">
             0
-            <img src="https://github.com/Pacific1a/img/blob/main/imgALL/Group%208.png?raw=true" alt="" width="20px">
+            <img src="https://github.com/Pacific1a/img/blob/main/imgALL/Group%208.png?raw=true" alt="" width="20px" fetchpriority="high">
           </div>
           <div class="group-ico-1">
             <span>0</span>
-            <img src="https://github.com/Pacific1a/img/blob/main/imgALL/Group%209.png?raw=true" alt="" width="20px">
+            <img src="https://github.com/Pacific1a/img/blob/main/imgALL/Group%209.png?raw=true" alt="" width="20px" fetchpriority="high">
           </div>
      </div>
       </header>
@@ -161,11 +172,11 @@
           <div class="text-wrapper-5">Live</div>
           <div class="circle"></div>
         </div>
-        <img class="img-2" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/very-high-prize.svg" />
-        <img class="img-2" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/medium-prize.svg" />
-        <img class="img-3" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/low-prize.svg" />
-        <img class="img-3" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/very-low-prize.svg" />
-        <img class="img-3" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/ultra-low-prize.svg" />
+        <img class="img-2" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/very-high-prize.svg" fetchpriority="high" />
+        <img class="img-2" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/medium-prize.svg" fetchpriority="high" />
+        <img class="img-3" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/low-prize.svg" fetchpriority="high" />
+        <img class="img-3" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/very-low-prize.svg" fetchpriority="high" />
+        <img class="img-3" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/imgALL/ultra-low-prize.svg" fetchpriority="high" />
       </div>
 
       
@@ -183,30 +194,30 @@
             <div class="ellipse-6"></div>
           </div>
           <div class="MORE-button">
-            <img class="vector" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-1.svg" />
+            <img class="vector" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-1.svg" loading="lazy" />
             <div class="text-wrapper-8">Подробнее</div>
           </div>
         </div>
       </div>
       <div class="section-menu">
         <div class="all">
-          <img class="all-icon" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/all-icon.svg" />
+          <img class="all-icon" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/all-icon.svg" fetchpriority="high" />
           <div class="text-wrapper-9">All</div>
         </div>
         <div class="div-2">
-          <img class="vector-2" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-2.svg" />
+          <img class="vector-2" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-2.svg" fetchpriority="high" />
           <div class="text-wrapper-10">Chips</div>
         </div>
         <div class="new">
-          <img class="vector-3" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-3.svg" />
+          <img class="vector-3" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-3.svg" loading="lazy" />
           <div class="text-wrapper-11">New</div>
         </div>
         <div class="div-2">
-          <img class="vector-4" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-4.svg" />
+          <img class="vector-4" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-4.svg" loading="lazy" />
           <div class="text-wrapper-11">Low</div>
         </div>
         <div class="high">
-          <img class="vector-4" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-5.svg" />
+          <img class="vector-4" src="https://raw.githubusercontent.com/Pacific1a/img/af9521ea7091209117e10a6160ad12ff29d7364e/main/vector-5.svg" loading="lazy" />
           <div class="text-wrapper-12">High</div>
         </div>
         <div class="select"></div>
@@ -275,7 +286,7 @@
         </div>
       
         <div class="div-3" data-price="1099" data-new="false" data-chip="false">
-          <img class="background" src="https://github.com/Pacific1a/img/blob/main/main/background-2.png?raw=true" />
+          <img class="background" src="https://github.com/Pacific1a/img/blob/main/main/background-2.png?raw=true" loading="lazy" />
           <div class="overlap-10">
             <div class="text-wrapper-23">1099₽</div>
             <div class="text-wrapper-24">BearBrick</div>
@@ -309,25 +320,25 @@
         <a href="swap/index.html" class="swap">
           <div class="icon-5">
             <div class="overlap-group-5">
-              <img class="vector-7" src="https://raw.githubusercontent.com/Pacific1a/img/dc2c4fda5555d83e8626cb240f9621eabe5191a0/imgALL/vector-11.svg" /> <img class="vector-8" src="https://raw.githubusercontent.com/Pacific1a/img/dc2c4fda5555d83e8626cb240f9621eabe5191a0/imgALL/vector-12.svg" />
+              <img class="vector-7" src="https://raw.githubusercontent.com/Pacific1a/img/dc2c4fda5555d83e8626cb240f9621eabe5191a0/imgALL/vector-11.svg" loading="lazy" /> <img class="vector-8" src="https://raw.githubusercontent.com/Pacific1a/img/dc2c4fda5555d83e8626cb240f9621eabe5191a0/imgALL/vector-12.svg" loading="lazy" />
             </div>
           </div>
           <div class="text-wrapper-32">Swap</div>
         </a>
         <a href="profile/index.html" class="profile">
           <div class="icon-6">
-            <img class="vector-9" src="https://raw.githubusercontent.com/Pacific1a/img/dc2c4fda5555d83e8626cb240f9621eabe5191a0/imgALL/vector-13.svg" /> <img class="vector-10" src="https://raw.githubusercontent.com/Pacific1a/img/dc2c4fda5555d83e8626cb240f9621eabe5191a0/imgALL/vector-14.svg" />
+            <img class="vector-9" src="https://raw.githubusercontent.com/Pacific1a/img/dc2c4fda5555d83e8626cb240f9621eabe5191a0/imgALL/vector-13.svg" loading="lazy" /> <img class="vector-10" src="https://raw.githubusercontent.com/Pacific1a/img/dc2c4fda5555d83e8626cb240f9621eabe5191a0/imgALL/vector-14.svg" loading="lazy" />
           </div>
           <div class="text-wrapper-32">Profile</div>
         </a>
       </div>
     </div>  
      <script src="https://telegram.org/js/telegram-web-app.js"></script>
-     <script src="telegram-user-data.js"></script>
-    <script src="project-preloader.js"></script>
-    <script src="upgrade/liveprize.js"></script>
-    <script src="global-balance.js"></script>
-    <script src="main/home.js"></script>
+     <script src="telegram-user-data.js" defer></script>
+    <script src="project-preloader.js" defer></script>
+    <script src="upgrade/liveprize.js" defer></script>
+    <script src="global-balance.js" defer></script>
+    <script src="main/home.js" defer></script>
     <script>
       (function () {
         const loader = document.getElementById('app-loader');
