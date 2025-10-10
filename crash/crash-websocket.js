@@ -402,14 +402,23 @@
       
       // Сбрасываем только если НЕ забрали
       if (playerHasBet && !playerCashedOut) {
-        // Проиграли
-        playerHasBet = false;
-        playerBetAmount = 0;
-        playerCashedOut = false;
-        betPlacedDuringFlight = false; // Сбрасываем флаг
+        // Если ставка была сделана во время полета - НЕ сбрасываем флаги
+        // Они нужны для следующего раунда
+        if (!betPlacedDuringFlight) {
+          // Обычный проигрыш - сбрасываем все
+          playerHasBet = false;
+          playerBetAmount = 0;
+          playerCashedOut = false;
+        }
+        // betPlacedDuringFlight НЕ сбрасываем - он нужен для следующего раунда
       }
       
-      setButtonState(BUTTON_STATES.BET);
+      // Устанавливаем состояние кнопки в зависимости от наличия отложенной ставки
+      if (betPlacedDuringFlight) {
+        setButtonState(BUTTON_STATES.CANCEL);
+      } else {
+        setButtonState(BUTTON_STATES.BET);
+      }
     });
   }
 
