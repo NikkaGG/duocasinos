@@ -124,7 +124,7 @@ class CrashChart {
     // Добавляем шум, как в визуальной линии
     if (lastPoint) {
       const noise = this.getNoise(lastPoint.time);
-      const noiseAmplitude = 0.3;
+      const noiseAmplitude = 0.05; // Уменьшено с 0.3 до 0.05 для плавного движения
       crashY += noise * noiseAmplitude;
     }
     
@@ -278,7 +278,7 @@ class CrashChart {
     
     // Предвыделяем массив для производительности
     const chartPoints = new Array(visiblePoints.length);
-    const noiseAmplitude = 0.3;
+    const noiseAmplitude = 0.05; // Уменьшено с 0.3 до 0.05 для плавного движения
     
     // Подготавливаем массив точек с координатами
     for (let i = 0; i < visiblePoints.length; i++) {
