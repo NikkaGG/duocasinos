@@ -326,51 +326,43 @@
         crashChart.start();
       }
       
-      // Обрабатываем ставки
+      // Обрабатываем ставки - списываем баланс для ВСЕХ зарезервированных ставок
       if (playerHasBet && !playerCashedOut) {
-        if (betPlacedDuringFlight) {
-          // Ставка была зарезервирована во время предыдущего раунда
-          // Теперь списываем баланс и отправляем ставку на сервер
-          const success = await window.GameBalanceAPI.placeBet(playerBetAmount, 'chips');
-          if (!success) {
-            // Если не хватает баланса - отменяем ставку
-            console.log('❌ Недостаточно фишек для активации ставки');
-            playerBetAmount = 0;
-            playerHasBet = false;
-            playerCashedOut = false;
-            betPlacedDuringFlight = false;
-            setButtonState(BUTTON_STATES.BET);
-            updateAutoSectionState();
-            return;
-          }
-          
-          // Баланс списан успешно, отправляем ставку на сервер
-          if (ws) {
-            const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
-            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-            const nickname = tgUser?.first_name || 'Test';
-            const photoUrl = tgUser?.photo_url || null;
-
-            ws.socket.emit('place_bet', {
-              game: 'crash',
-              userId,
-              nickname,
-              photoUrl,
-              bet: playerBetAmount
-            });
-          }
-          
-          // Сбрасываем флаг и активируем ставку для этого раунда
+        // Списываем баланс независимо от того когда была сделана ставка
+        const success = await window.GameBalanceAPI.placeBet(playerBetAmount, 'chips');
+        if (!success) {
+          // Если не хватает баланса - отменяем ставку
+          console.log('❌ Недостаточно фишек для активации ставки');
+          playerBetAmount = 0;
+          playerHasBet = false;
+          playerCashedOut = false;
           betPlacedDuringFlight = false;
-          setButtonState(BUTTON_STATES.CASHOUT);
-          updateAutoSectionState(); // Блокируем Auto Cash Out так как ставка активна
-          console.log('✅ Ставка активирована для текущего раунда');
-        } else {
-          // Ставка была сделана в период ожидания - активна для текущего раунда
-          setButtonState(BUTTON_STATES.CASHOUT);
-          updateAutoSectionState(); // Блокируем Auto Cash Out так как ставка активна
-          console.log('✅ Ставка активна для текущего раунда');
+          setButtonState(BUTTON_STATES.BET);
+          updateAutoSectionState();
+          return;
         }
+        
+        // Баланс списан успешно, отправляем ставку на сервер
+        if (ws) {
+          const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
+          const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+          const nickname = tgUser?.first_name || 'Test';
+          const photoUrl = tgUser?.photo_url || null;
+
+          ws.socket.emit('place_bet', {
+            game: 'crash',
+            userId,
+            nickname,
+            photoUrl,
+            bet: playerBetAmount
+          });
+        }
+        
+        // Активируем ставку для текущего раунда
+        betPlacedDuringFlight = false;
+        setButtonState(BUTTON_STATES.CASHOUT);
+        updateAutoSectionState(); // Блокируем Auto Cash Out так как ставка активна
+        console.log('✅ Ставка активирована для текущего раунда, баланс списан');
       } else if (playerHasBet && playerCashedOut) {
         // Уже забрали - показываем BET для следующего раунда
         setButtonState(BUTTON_STATES.BET);
@@ -573,7 +565,7 @@
   if (elements.betButton) {
     elements.betButton.addEventListener('click', async () => {
       if (buttonState === BUTTON_STATES.BET && gameState !== GAME_STATES.FLYING) {
-        // Делаем ставку (только в waiting)
+        // Резервируем ставку в период ожидания (баланс НЕ списываем)
         const betAmount = getBetAmount();
         
         if (!window.GameBalanceAPI || !window.GameBalanceAPI.canPlaceBet(betAmount, 'chips')) {
@@ -581,32 +573,16 @@
           return;
         }
         
-        const success = await window.GameBalanceAPI.placeBet(betAmount, 'chips');
-        if (success) {
-          playerBetAmount = betAmount;
-          playerHasBet = true;
-          playerCashedOut = false;
-          setButtonState(BUTTON_STATES.CANCEL);
-          updateAutoSectionState(); // Блокируем Auto Cash Out при размещении ставки
-          
-          // Отправляем на сервер
-          if (ws) {
-            const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
-            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-            const nickname = tgUser?.first_name || 'Test';
-            const photoUrl = tgUser?.photo_url || null;
-
-            ws.socket.emit('place_bet', {
-              game: 'crash',
-              userId,
-              nickname,
-              photoUrl,
-              bet: betAmount
-            });
-          }
-          
-          console.log(`✅ Ставка: ${betAmount} chips`);
-        }
+        // Только проверяем баланс, но НЕ списываем
+        // Баланс будет списан когда раунд начнется
+        playerBetAmount = betAmount;
+        playerHasBet = true;
+        playerCashedOut = false;
+        betPlacedDuringFlight = false; // Ставка в период ожидания
+        setButtonState(BUTTON_STATES.CANCEL);
+        updateAutoSectionState();
+        
+        console.log(`✅ Ставка зарезервирована: ${betAmount} chips (баланс будет списан при старте раунда)`);
       } else if (buttonState === BUTTON_STATES.BET && gameState === GAME_STATES.FLYING) {
         // Резервируем ставку на следующий раунд (баланс НЕ списываем)
         const betAmount = getBetAmount();
@@ -623,40 +599,31 @@
         playerCashedOut = false;
         betPlacedDuringFlight = true; // Помечаем что ставка сделана во время полета
         setButtonState(BUTTON_STATES.CANCEL);
-        updateAutoSectionState(); // Блокируем Auto Cash Out (хотя уже заблокировано, но для консистентности)
-        
-        // НЕ отправляем на сервер ставку для следующего раунда во время текущего
-        // Отправим только после начала нового раунда
+        updateAutoSectionState();
         
         console.log(`✅ Ставка зарезервирована на следующий раунд: ${betAmount} chips (баланс будет списан при старте)`);
       } else if (buttonState === BUTTON_STATES.CANCEL) {
         // Отменяем ставку
-        // Возвращаем баланс только если ставка была активирована (баланс был списан)
-        if (!betPlacedDuringFlight) {
-          // Ставка была сделана в период ожидания - баланс был списан, возвращаем
-          await window.GameBalanceAPI.payWinnings(playerBetAmount, 'chips');
+        // Баланс НЕ возвращаем, так как он еще не был списан
+        
+        // Отправляем на сервер отмену ставки только если она была отправлена
+        if (!betPlacedDuringFlight && ws) {
+          const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
           
-          // Отправляем на сервер отмену ставки
-          if (ws) {
-            const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
-            
-            ws.socket.emit('cancel_bet', {
-              game: 'crash',
-              userId
-            });
-          }
-          console.log('❌ Ставка отменена, баланс возвращен');
-        } else {
-          // Ставка была зарезервирована во время полета - баланс не списывался, просто отменяем
-          console.log('❌ Резервирование ставки отменено');
+          ws.socket.emit('cancel_bet', {
+            game: 'crash',
+            userId
+          });
         }
+        
+        console.log('❌ Резервирование ставки отменено');
         
         playerBetAmount = 0;
         playerHasBet = false;
         playerCashedOut = false;
-        betPlacedDuringFlight = false; // Сбрасываем флаг
+        betPlacedDuringFlight = false;
         setButtonState(BUTTON_STATES.BET);
-        updateAutoSectionState(); // Разблокируем Auto Cash Out после отмены ставки
+        updateAutoSectionState();
       } else if (buttonState === BUTTON_STATES.CASHOUT) {
         // Забираем выигрыш
         await performCashOut();
