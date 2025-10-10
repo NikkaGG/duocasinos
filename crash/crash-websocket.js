@@ -19,6 +19,7 @@
   let playerBetAmount = 0;
   let playerHasBet = false;
   let playerCashedOut = false;
+  let betPlacedDuringFlight = false; // Флаг: ставка сделана во время полета (для следующего раунда)
   let currentMultiplier = 1.00;
   let players = [];
   let ws = null;
@@ -284,9 +285,35 @@
         crashChart.start();
       }
       
-      // Если есть ставка и не забрали - показываем CASHOUT
+      // Обрабатываем ставки
       if (playerHasBet && !playerCashedOut) {
-        setButtonState(BUTTON_STATES.CASHOUT);
+        if (betPlacedDuringFlight) {
+          // Ставка была сделана во время предыдущего раунда
+          // Теперь отправляем её на сервер для текущего раунда
+          if (ws) {
+            const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
+            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            const nickname = tgUser?.first_name || 'Test';
+            const photoUrl = tgUser?.photo_url || null;
+
+            ws.socket.emit('place_bet', {
+              game: 'crash',
+              userId,
+              nickname,
+              photoUrl,
+              bet: playerBetAmount
+            });
+          }
+          
+          // Сбрасываем флаг и активируем ставку для этого раунда
+          betPlacedDuringFlight = false;
+          setButtonState(BUTTON_STATES.CASHOUT);
+          console.log('✅ Ставка активирована для текущего раунда');
+        } else {
+          // Ставка была сделана в период ожидания - активна для текущего раунда
+          setButtonState(BUTTON_STATES.CASHOUT);
+          console.log('✅ Ставка активна для текущего раунда');
+        }
       } else if (playerHasBet && playerCashedOut) {
         // Уже забрали - показываем BET для следующего раунда
         setButtonState(BUTTON_STATES.BET);
@@ -360,6 +387,7 @@
         playerHasBet = false;
         playerBetAmount = 0;
         playerCashedOut = false;
+        betPlacedDuringFlight = false; // Сбрасываем флаг
       }
       
       setButtonState(BUTTON_STATES.BET);
@@ -447,10 +475,17 @@
   async function performCashOut() {
     if (!playerHasBet || playerCashedOut) return;
     
+    // Нельзя забрать если ставка для следующего раунда
+    if (betPlacedDuringFlight) {
+      console.log('⚠️ Нельзя забрать ставку для следующего раунда');
+      return;
+    }
+    
     const winAmount = Math.floor(playerBetAmount * currentMultiplier);
     await window.GameBalanceAPI.payWinnings(winAmount, 'chips');
     
     playerCashedOut = true;
+    betPlacedDuringFlight = false; // Сбрасываем флаг
     setButtonState(BUTTON_STATES.BET);
     
     // Отправляем на сервер
@@ -516,32 +551,20 @@
           playerBetAmount = betAmount;
           playerHasBet = true;
           playerCashedOut = false;
+          betPlacedDuringFlight = true; // Помечаем что ставка сделана во время полета
           setButtonState(BUTTON_STATES.CANCEL);
           
-          // Отправляем на сервер (БАГ ИСПРАВЛЕН: ставка должна отправляться на сервер!)
-          if (ws) {
-            const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
-            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-            const nickname = tgUser?.first_name || 'Test';
-            const photoUrl = tgUser?.photo_url || null;
-
-            ws.socket.emit('place_bet', {
-              game: 'crash',
-              userId,
-              nickname,
-              photoUrl,
-              bet: betAmount
-            });
-          }
+          // НЕ отправляем на сервер ставку для следующего раунда во время текущего
+          // Отправим только после начала нового раунда
           
-          console.log(`✅ Ставка на следующий раунд: ${betAmount} chips`);
+          console.log(`✅ Ставка на следующий раунд: ${betAmount} chips (будет отправлена при старте)`);
         }
       } else if (buttonState === BUTTON_STATES.CANCEL) {
         // Отменяем ставку
         await window.GameBalanceAPI.payWinnings(playerBetAmount, 'chips');
         
-        // Отправляем на сервер (БАГ ИСПРАВЛЕН: отмена должна отправляться на сервер!)
-        if (ws) {
+        // Отправляем на сервер только если ставка уже была отправлена (не во время полета)
+        if (ws && !betPlacedDuringFlight) {
           const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 123456789;
           
           ws.socket.emit('cancel_bet', {
@@ -553,6 +576,7 @@
         playerBetAmount = 0;
         playerHasBet = false;
         playerCashedOut = false;
+        betPlacedDuringFlight = false; // Сбрасываем флаг
         setButtonState(BUTTON_STATES.BET);
         console.log('❌ Ставка отменена');
       } else if (buttonState === BUTTON_STATES.CASHOUT) {
