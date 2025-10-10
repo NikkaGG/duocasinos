@@ -137,14 +137,19 @@ class CrashChart {
   }
   
   getMaxMultiplier() {
-    if (this.currentMultiplier <= 2) {
+    // Плавный переход масштаба без резких скачков
+    const mult = this.currentMultiplier;
+    
+    if (mult <= 2) {
       return 2.5;
-    } else if (this.currentMultiplier <= 5) {
-      return 6;
-    } else if (this.currentMultiplier <= 10) {
-      return 12;
+    } else if (mult <= 10) {
+      // Плавная интерполяция от 2.5 до 12
+      // При mult=2: return 2.5, при mult=10: return 12
+      const t = (mult - 2) / (10 - 2); // 0 до 1
+      return 2.5 + (12 - 2.5) * t;
     } else {
-      return Math.ceil(this.currentMultiplier * 1.2);
+      // Для высоких множителей добавляем 20% сверху
+      return mult * 1.2;
     }
   }
   
